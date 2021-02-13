@@ -9,7 +9,7 @@
 using namespace Rana;
 
 
-const char * Config::CONFIG_FILE = "/config.json";
+const char * Config::CONFIG_FILE = "/config.jso";
 
 
 
@@ -26,7 +26,21 @@ bool Config::SaveConfig(){
     json[NodeName_name] = NodeName;
     json[DEVADDR_name] = binToHexString(DEVADDR, sizeof(DEVADDR));
     json[SF_name] = SF;
+    json[TimeBetween_name] = TimeBetween;
+    json[APPSKEY_name] = binToHexString(APPSKEY, sizeof(APPSKEY));
+    json[NWKSKEY_name] = binToHexString(NWKSKEY, sizeof(NWKSKEY));
+    JsonObject ProbesObj = json.createNestedObject(Probes_name);
+    String strI;
+    for(auto it = Probes.begin(); it != Probes.end(); it++)
+    {
+        strI = String((uint8_t)it->first,10);
+        ProbesObj[strI.c_str()] = binToHexString(it->second.data(), sizeof(DevAddrArray_t));
+    }
     auto result = FSWrapper::writeJsonDoc(CONFIG_FILE, json);
+
+    Serial.println("Serialized json:");
+    serializeJson(json, Serial);
+    Serial.println("End of json");
     return result == json.size(); //result < size;
 
 }
@@ -40,18 +54,42 @@ void Config::ReadConfig()
 
     if( json.size()  > 0 ){ 
         ESP_LOGD(TAG,"Loding config:");
+        JsonVariant jv = json[NodeName_name];
+        if(  ! jv.isNull()  )
+            setNodeName(jv.as<const char *>());
+        else
+            ESP_LOGW(TAG,"NodeID not found in the config");
 
-        if(json.containsKey(NodeName_name)){
-            if(strlen(json[NodeName_name])>0)
-                setNodeIdName((const char *) (json[NodeName_name]));
-        } else {
-            ESP_LOGD(TAG,"NodeID not found in the config");
+        jv = json[DEVADDR_name];
+        if( !jv.isNull() )
+            setDevaddr(json[DEVADDR_name].as<const char *>());
+        else
+            ESP_LOGW(TAG,"DEVADDR not found in the config");
+
+        jv = json[SF_name];
+        if( !jv.isNull() && jv.is<uint8_t>()){
+            setSF(jv.as<uint8_t>());
         }
-        if(json.containsKey(DEVADDR_name)){
-           setDevaddr((const char *) (json[DEVADDR_name]));
-        }else{
-            ESP_LOGD(TAG,"DEVADDR not found in the config");
+
+        jv = json[APPSKEY_name];
+        if( !jv.isNull() )
+            setAppskey(json[APPSKEY_name].as<const char *>());
+        else
+            ESP_LOGW(TAG,"APPSKEY not found in the config");
+
+        jv = json[NWKSKEY_name];
+        if( !jv.isNull() )
+            setNwkskey(json[NWKSKEY_name].as<const char *>());
+        else
+            ESP_LOGW(TAG,"NWKSKEY not found in the config");
+
+        jv = json[TimeBetween_name];
+        if( !jv.isNull() && jv.is<uint32_t>()  ){
+            setTimeBetween(jv.as<uint32_t>());
         }
+
+        setProbes(json);
+
     } else {
         ESP_LOGW(TAG, "Empty config json");
     }
@@ -59,10 +97,14 @@ void Config::ReadConfig()
 }
     
 
-void Config::setNodeIdName(const char * newName) 
+void Config::setNodeName(const char * newName) 
 {
-    NodeName =  newName;
-    ESP_LOGD(TAG,"Set nodeId to [%s] by input [%s]",NodeName.c_str(), newName);
+    if(strlen(newName) > 0){
+        NodeName =  newName;
+        ESP_LOGD(TAG,"NodeName set to [%s]",NodeName.c_str());
+    } else {
+        ESP_LOGE(TAG,"Empty string passed - NodeName left untouched: [%s]",NodeName.c_str());
+    }
 }
 
 void Config::setDevaddr(const char * strDevname) 
@@ -73,6 +115,80 @@ void Config::setDevaddr(const char * strDevname)
     else
         ESP_LOGI(TAG,"Set DEVADDR with input [%s]",strDevname );
 }
+
+
+void Config::setSF(uint8_t newVal) 
+{
+    if( 7 <= newVal && newVal <= 12 ){
+        SF = newVal;
+        ESP_LOGD(TAG, "SF set to %d", SF);
+    } else {
+        ESP_LOGE(TAG, "Invalid SF value [%d], conifig untached",newVal);
+    }   
+}
+
+void Config::setTimeBetween(uint32_t newVal /*[s]*/) 
+{
+    TimeBetween = newVal;
+    ESP_LOGD(TAG,"TimeBetween measurments set to %ds",TimeBetween);
+
+}
+
+void Config::setAppskey(const char * strHexAppskey) 
+{
+   setBinaryFromHexStr(strHexAppskey, APPSKEY, (uint8_t)sizeof(APPSKEY), APPSKEY_name);
+}
+
+bool Config::setBinaryFromHexStr(const char * str, uint8_t * data, uint8_t size, const char * name ){
+    auto len = hexStringToBin(str, data, size);
+    if( len > 0 ){
+        ESP_LOGD(TAG,"%s set to %s",name, str);
+        return true;
+    }else {
+        ESP_LOGE(TAG,"Too short value [%s], %s not set",str, name);
+        return false;
+    }
+}
+
+
+void Config::setNwkskey(const char * strHexNwkskey) 
+{
+   setBinaryFromHexStr(strHexNwkskey, NWKSKEY, (uint8_t)sizeof(NWKSKEY), NWKSKEY_name);
+    
+}
+
+
+void Config::setProbes(JsonDocument & root) 
+{
+    JsonObject probes = root[Probes_name];
+    if( ! probes.isNull() ){
+        for(uint8_t i = 0; i<0xFF; i++){
+            String strI(i,10);
+            const char * strAddr = probes[strI.c_str()];
+            if( strAddr != nullptr  ){
+                setProbeAddess(i,strAddr);
+                ESP_LOGD(TAG, "Set Probes[%d]=%s",i,strAddr);
+            }
+        }
+    } else {
+        ESP_LOGE(TAG, "No or empty Probes object in the json");
+   }
+
+}
+
+
+void Config::setProbeAddess(uint8_t idx, const char * strHexAddress) 
+{
+    DevAddrArray_t tmp;
+    auto read = setBinaryFromHexStr(strHexAddress, tmp.data(), tmp.max_size(), Probes_name);
+    if( read ){
+        Probes[idx] = tmp;
+        ESP_LOGD(TAG, "Probe[%d] set to 0x%s",idx,strHexAddress );
+    } else {
+        ESP_LOGE(TAG, "Invalid value [%s] for ProbeDevice address, not set",strHexAddress);
+    }
+}
+
 
 
 void Config::ShowConfig() 
@@ -93,4 +209,3 @@ void Config::ShowConfig()
 
     Serial.println("}");
 }
-

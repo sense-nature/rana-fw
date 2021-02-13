@@ -35,12 +35,12 @@ uint8_t hexValue(char c){
 
 size_t hexStringToBin(const char * str, uint8_t * data, size_t size)
 {
-    memset(data,0,size);
-    auto strLen = strlen(str);
     size_t result = 0;
+    auto len = strlen(str);
+    if( len <  2 * size)
+        return 0;
+    memset(data,0,size);
     for(int i = 0 ; i < size; i++){
-        if( i*2+1 >= strLen )
-            break;
         data[i] = hexValue(str[2*i]) * 16 +  hexValue(str[2*i+1]) ;
         result ++;
     }

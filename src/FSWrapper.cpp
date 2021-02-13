@@ -79,6 +79,11 @@ String FSWrapper::readFileToString(const char * path)
 }
 
 
+/**
+ * Ties to deserialize the file from the path. 
+ * Returns true if file was read successfully, 
+ * returns fales in case of FS or deserialization error. 
+ */
 bool FSWrapper::readJsonDoc(const char * path, JsonDocument & json) 
 {
     ESP_LOGD(TAG,"Deserializing json file: %s\n", path);
@@ -95,7 +100,7 @@ bool FSWrapper::readJsonDoc(const char * path, JsonDocument & json)
             ESP_LOGD(TAG,"Successfully read json config");
         }
         file.close();
-        ESP_LOGD(TAG,"Read %d bytes into string",json.size());
+        ESP_LOGD(TAG,"Read %d element into the json root",json.size());
     }
     return result;
 

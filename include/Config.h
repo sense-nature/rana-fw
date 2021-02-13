@@ -6,12 +6,16 @@
 #include <SPIFFS.h>
 #include <DallasTemperature.h>   
 #include "FSWrapper.h"
+#include <map>
 
 
 
 namespace Rana
 {
 
+
+
+typedef std::array<uint8_t,8> DevAddrArray_t;
 class Config
 {
 protected:
@@ -19,17 +23,18 @@ protected:
     static const size_t JSON_DOC_BUFFER_SIZE = 2000;
     static const size_t NODE_NAME_MAX_LENGTH = 32;
 
-
-
-
-    void setNodeIdName(const char * newName);
+    void setNodeName(const char * newName);
     void setDevaddr(const char * strDevname);
-    void setAppskey(const char * strAppskey);
-    void setNwkskey(const char * strNwkskey);
+    void setSF(uint8_t newVal);
+    void setTimeBetween(uint32_t newVal);
+    void setAppskey(const char * strHexAppskey);
+    void setNwkskey(const char * strHexNwkskey);
+    
+    void setProbes(JsonDocument & root);
+    void setProbeAddess(uint8_t idx, const char * strHexAddress);
 
-
+    bool setBinaryFromHexStr(const char * str, uint8_t * data, uint8_t size, const char * name );
 public:
-
     String NodeName;
     const char * NodeName_name = "NodeName";
 
@@ -51,17 +56,13 @@ public:
     uint8_t NWKSKEY[16] = {0};
     const char * NWKSKEY_name = "NWKSKEY";
     
-    std::vector<DeviceAddress> Probes;
-    const char * probes_name = "Probes";
+    std::map<uint8_t,DevAddrArray_t> Probes;
+    const char * Probes_name = "Probes";
     
 
 
     Config();
     ~Config(){};
-    //fallbacking to SPIFS for the config
-    //the SD still doesn't want to work
-    //const static uint8_t SD_CS_Pin = 23;
-
     bool SaveConfig();
     void ReadConfig();
     void ShowConfig();

@@ -25,23 +25,19 @@ bool Config::SaveConfig(){
 
     json[NodeName_name] = NodeName;
     json[DEVADDR_name] = binToHexString(DEVADDR, sizeof(DEVADDR));
-    json[SF_name] = SF;
-    json[TimeBetween_name] = TimeBetween;
     json[APPSKEY_name] = binToHexString(APPSKEY, sizeof(APPSKEY));
     json[NWKSKEY_name] = binToHexString(NWKSKEY, sizeof(NWKSKEY));
+    json[SF_name] = SF;
+    json[TimeBetween_name] = TimeBetween;
     JsonObject ProbesObj = json.createNestedObject(Probes_name);
-    String strI;
     for(auto it = Probes.begin(); it != Probes.end(); it++)
-    {
-        //strI = String((uint8_t)it->first,10);
         ProbesObj[String((uint8_t)it->first,10)] = binToHexString(it->second.data(), sizeof(DevAddrArray_t));
-    }
-    //auto result = FSWrapper::writeJsonDoc(CONFIG_FILE, json);
 
+    //auto result = 
+    FSWrapper::writeJsonDoc(CONFIG_FILE, json);
     Serial.println("Serialized json:");
     serializeJson(json, Serial);
     Serial.println("End of json");
-//    return result == json.size(); //result < size;
     return json.size();
 }
 
@@ -91,10 +87,7 @@ void Config::ReadConfig()
         } else {
             ESP_LOGW(TAG,"%s is null or not uint32_t",TimeBetween_name);
         }
-
-
         setProbes(json);
-
     } else {
         ESP_LOGW(TAG, "Empty config json");
     }
@@ -207,7 +200,7 @@ void Config::ShowConfig()
     Serial.println(binToHexString(DEVADDR,sizeof(DEVADDR)));
     Serial.printf("  %s: 0x",APPSKEY_name);
     Serial.println(binToHexString(APPSKEY,sizeof(APPSKEY)));
-    Serial.printf("  %s: 0x%s",NWKSKEY_name);
+    Serial.printf("  %s: 0x",NWKSKEY_name);
     Serial.println(binToHexString(NWKSKEY,sizeof(NWKSKEY)));
     
     Serial.printf("  %s:%d\n",SF_name,SF);

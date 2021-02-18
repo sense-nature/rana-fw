@@ -1,12 +1,11 @@
 #include "FSWrapper.h"
 #include "rana_logging.h"
 #include <SPI.h>
+#include <SD.h>
 #include <SPIFFS.h>
 
 
-
 using namespace Rana;
-
 
 void listDir(fs::FS &fs, const char * dirname, uint8_t levels){
     Serial.printf("Listing directory: %s\r\n", dirname);
@@ -40,27 +39,65 @@ void listDir(fs::FS &fs, const char * dirname, uint8_t levels){
 }
 
 
-
-
-
-fs::FS * FSWrapper::pFS = nullptr;
-
 fs::FS & FSWrapper::getFS() 
 {
-    if( pFS == nullptr ){
-        SPI.begin( SCK, MISO, MOSI, FLASH_CS_PIN);
-        if(!SPIFFS.begin(false)){
-            ESP_LOGE(TAG,"SPIFFS Mount Failed");
-        } else {
-            listDir(SPIFFS, "/",0);        
-        }
-        pFS = & SPIFFS;
-        return *pFS;
-    } 
-
-    return *pFS;
+    bool bSuccess = false;
+    auto pFs = getSDFS( bSuccess );
+    if (bSuccess){
+        ESP_LOGI(TAG,"SD Card found - using as the storage");
+        return *pFs;
+    }
+    ESP_LOGI(TAG,"SD Card NOT found - falling back to SPIFFS as the storage");
+    return *getSPIFFS( bSuccess );
 }
 
+fs::FS * FSWrapper::getSPIFFS(bool & success)
+{
+    SPI.end();
+    SPI.begin( SCK, MISO, MOSI, FLASH_CS_PIN);
+    if(!SPIFFS.begin(false)){
+        success = false;
+        ESP_LOGE(TAG,"SPIFFS Mount Failed");
+    } else {
+        success = true;
+        ESP_LOGI(TAG, "SPI Flash capacity used: %.3gMB of %.3gMB ",SPIFFS.usedBytes()/(1024.0*1024.0),SPIFFS.totalBytes()/(1024.0*1024.0)); 
+        listDir(SPIFFS, "/",0);        
+    }
+    return &SPIFFS;
+
+}
+
+String cardTypeStr(sdcard_type_t t)
+{
+    switch(t){
+        case CARD_NONE: return "NO CARD";
+        case CARD_MMC: return "MMC CARD";
+        case CARD_SD: return "SD CARD";
+        case CARD_SDHC: return "SDHC CARD";
+        case CARD_UNKNOWN: 
+        default: return "CARD UNKNOWN";
+    }
+}
+
+fs::FS * FSWrapper::getSDFS(bool & success){
+    
+    SPI.end();
+    //turn off the LoRa SPI channel 
+    //if not done, SD cannot be accessed (but SPIFFS can be)
+    pinMode(LORA_CS, OUTPUT);
+    digitalWrite(LORA_CS, HIGH);
+
+    SPI.begin(SCK, MISO, MOSI, EXT_SD_CS);
+    if (!SD.begin(EXT_SD_CS)) {
+        ESP_LOGE(TAG,"SD init failed");
+        success = false;
+    } else {
+        success = true; 
+        ESP_LOGI(TAG, "Found SD card type: %s, size: %.3gMB",cardTypeStr(SD.cardType()).c_str(), SD.cardSize()/1024.0/1024.0);
+        ESP_LOGI(TAG, "Card capacity used: %.3gMB of %.3gMB ",SD.usedBytes()/(1024.0*1024.0),SD.totalBytes()/(1024.0*1024.0)); 
+    }
+    return &SD;
+}
 
 String FSWrapper::readFileToString(const char * path) 
 {

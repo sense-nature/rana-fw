@@ -13,11 +13,18 @@ class FSWrapper
 {
 protected:
     static fs::FS *pFS; 
-    //pin for shown as the Flash_CS in Wireless Stick Lite
+    //pin shown as the Flash_CS in Wireless Stick Lite
     static const uint8_t FLASH_CS_PIN = 16;
 
-    static fs::FS & getFS();
+    //pin shown as the LoRa_CS
+    static const uint8_t LORA_CS = 18;
 
+    //pin connected on the PCB to the SD CS
+    static const uint8_t EXT_SD_CS = 23;
+
+    static fs::FS & getFS();
+    static fs::FS * getSDFS(bool & success);
+    static fs::FS * getSPIFFS(bool & success);
 public:
 static void begin();
     static bool readJsonDoc(const char * path, JsonDocument &json);

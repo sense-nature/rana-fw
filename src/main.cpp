@@ -19,7 +19,6 @@ void setup()
   Rana::Device::GetDisplay();
   config.ReadConfig();
   config.ShowConfig();
-  config.SaveConfig();
 
   ESP_LOGD(TAG,"At setup end: free heap: %gKB",esp_get_free_heap_size()/1024.0);
 }

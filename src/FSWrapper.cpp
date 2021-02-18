@@ -49,7 +49,7 @@ fs::FS & FSWrapper::getFS()
 {
     if( pFS == nullptr ){
         SPI.begin( SCK, MISO, MOSI, FLASH_CS_PIN);
-        if(!SPIFFS.begin(true)){
+        if(!SPIFFS.begin(false)){
             ESP_LOGE(TAG,"SPIFFS Mount Failed");
         } else {
             listDir(SPIFFS, "/",0);        

@@ -46,3 +46,10 @@ size_t hexStringToBin(const char * str, uint8_t * data, size_t size)
     }
     return result;
 }
+
+
+
+String devAddrToString(const DeviceAddress & da)
+{
+    return String("0x")+binToHexString(da, sizeof(DeviceAddress));
+}

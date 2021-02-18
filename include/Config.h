@@ -41,7 +41,7 @@ public:
     uint8_t DEVADDR[4] = {0};
     const char * DEVADDR_name = "DEVADDR";
 
-    uint8_t SF = 10;
+    uint8_t SF = 9;
     const char * SF_name = "SF";
 
 /**

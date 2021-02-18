@@ -1,10 +1,10 @@
 {
-    "NodeName":"rana01",
+    "NodeName":"xxx",
     "DEVADDR":"D1020408",
     "APPSKEY":"A123456789ABCDEF0123456789ABCDEF",
     "NWKSKEY":"B123456789ABCDEF0123456789ABCDEF",
-    "SF":"8",
-    "TimeBetween":"903",
+    "SF":8,
+    "TimeBetween":901,
     "Probes": {
         "0":"0011223344556677",
         "1":"0111223344556677",

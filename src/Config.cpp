@@ -33,16 +33,16 @@ bool Config::SaveConfig(){
     String strI;
     for(auto it = Probes.begin(); it != Probes.end(); it++)
     {
-        strI = String((uint8_t)it->first,10);
-        ProbesObj[strI.c_str()] = binToHexString(it->second.data(), sizeof(DevAddrArray_t));
+        //strI = String((uint8_t)it->first,10);
+        ProbesObj[String((uint8_t)it->first,10)] = binToHexString(it->second.data(), sizeof(DevAddrArray_t));
     }
-    auto result = FSWrapper::writeJsonDoc(CONFIG_FILE, json);
+    //auto result = FSWrapper::writeJsonDoc(CONFIG_FILE, json);
 
     Serial.println("Serialized json:");
     serializeJson(json, Serial);
     Serial.println("End of json");
-    return result == json.size(); //result < size;
-
+//    return result == json.size(); //result < size;
+    return json.size();
 }
 
 
@@ -69,6 +69,8 @@ void Config::ReadConfig()
         jv = json[SF_name];
         if( !jv.isNull() && jv.is<uint8_t>()){
             setSF(jv.as<uint8_t>());
+        } else {
+            ESP_LOGW(TAG,"%s is null or not uint8_t",SF_name);
         }
 
         jv = json[APPSKEY_name];
@@ -86,7 +88,10 @@ void Config::ReadConfig()
         jv = json[TimeBetween_name];
         if( !jv.isNull() && jv.is<uint32_t>()  ){
             setTimeBetween(jv.as<uint32_t>());
+        } else {
+            ESP_LOGW(TAG,"%s is null or not uint32_t",TimeBetween_name);
         }
+
 
         setProbes(json);
 
@@ -195,17 +200,28 @@ void Config::ShowConfig()
 {
     Serial.flush();
     Serial.println("Config data: {");
-    Serial.printf("  %s:%s",NodeName_name,NodeName.c_str());
+    Serial.printf("  %s : %s",NodeName_name,NodeName.c_str());
     Serial.println();
 
     Serial.printf("  %s: 0x",DEVADDR_name);
     Serial.println(binToHexString(DEVADDR,sizeof(DEVADDR)));
+    Serial.printf("  %s: 0x",APPSKEY_name);
+    Serial.println(binToHexString(APPSKEY,sizeof(APPSKEY)));
+    Serial.printf("  %s: 0x%s",NWKSKEY_name);
+    Serial.println(binToHexString(NWKSKEY,sizeof(NWKSKEY)));
     
-    Serial.printf("  %s:%d",SF_name,SF);
-    Serial.println();
+    Serial.printf("  %s:%d\n",SF_name,SF);
+//    Serial.println();
 
     Serial.printf("  %s:%d",TimeBetween_name,TimeBetween);
     Serial.println();    
 
+    Serial.println("  Probes: { ");
+
+    for( auto it = Probes.begin(); it!= Probes.end(); it++){
+        Serial.printf("    %d : 0x%s\n",it->first, binToHexString(it->second.data(), it->second.size() ).c_str() );
+    }
+    
+    Serial.println("  } ");    
     Serial.println("}");
 }

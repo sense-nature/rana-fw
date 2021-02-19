@@ -48,8 +48,14 @@ size_t hexStringToBin(const char * str, uint8_t * data, size_t size)
 }
 
 
-
 String devAddrToString(const DeviceAddress & da)
 {
     return String("0x")+binToHexString(da, sizeof(DeviceAddress));
+}
+
+
+DevAddrArray_t toDevAddrArray(const DeviceAddress & da){
+    DevAddrArray_t result;
+    memcpy(result.data(), da, result.size());
+    return result;
 }

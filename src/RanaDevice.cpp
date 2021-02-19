@@ -7,6 +7,8 @@
 #include <DallasTemperature.h>
 #include <OneWire.h>    
 
+#include "utils.h"
+
 using namespace Rana;
 
 void Device::VextON(void)
@@ -97,18 +99,20 @@ void printOneWireAddress(DeviceAddress deviceAddress)
 
 
 
-std::vector<float> Device::ReadDS18B20Temperatures() 
+
+
+std::vector<std::pair<DevAddrArray_t,float>>  Device::ReadDS18B20Temperatures() 
 {
-    std::vector<float> temps;
+	std::vector<std::pair<DevAddrArray_t,float>>  temps;
     OneWire w1(OneWire_Pin);
 	DallasTemperature ds18b20(&w1);
 	ds18b20.begin();
 	ds18b20.setResolution(12);
 	ds18b20.setCheckForConversion(false);
 	ds18b20.requestTemperatures();
-	delay(500u);
+	delay(200u);
 	uint8_t n = ds18b20.getDS18Count();
-    temps.reserve(n);
+	temps.reserve(n);
 	 if( n > 0 ){
         DeviceAddress addr = {0};
         Serial.println("Detected "+String(n)+" DS18B20 sensor(s) on the bus");
@@ -120,7 +124,7 @@ std::vector<float> Device::ReadDS18B20Temperatures()
 					Serial.println(",");
 				printOneWireAddress(addr);
                 auto t = ds18b20.getTempC(addr);
-				temps.push_back(t);
+				temps.push_back({toDevAddrArray(addr) ,t});
 				Serial.print(": " + String(t)  + " *C ");
 				GetDisplay()->drawString(35, i*10, String(i+1) + ": "+ String(t));
 				GetDisplay()->display();
@@ -133,4 +137,16 @@ std::vector<float> Device::ReadDS18B20Temperatures()
     return temps;
 }
 
+
+
+
+void Device::GotoDeepSleep() 
+{
+	Serial.println("Going to deep sleep.");
+  //from https://github.com/Heltec-Aaron-Lee/WiFi_Kit_series/issues/6#issuecomment-518896314
+   pinMode(RST_LoRa,INPUT);  
+
+   VextOFF();
+   esp_deep_sleep_start();    
+}
 

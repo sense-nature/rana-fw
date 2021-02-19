@@ -3,6 +3,10 @@
 
 #include <inttypes.h>
 #include <SSD1306.h>
+#include <DallasTemperature.h>
+#include <map>
+#include <vector>
+#include "utils.h"
 
 #include <esp_wifi.h>
 #include <esp_bt.h>  
@@ -36,10 +40,13 @@ public:
 
     static uint16_t RawBatteryVoltage();
     static SSD1306Wire * GetDisplay();
-    static std::vector<float> ReadDS18B20Temperatures();
+    static std::vector<std::pair<DevAddrArray_t,float>> ReadDS18B20Temperatures();
 
     void ReadConfigFromSD();
     void SaveConfigToSD();
+
+
+    static void GotoDeepSleep();
 
          
 };

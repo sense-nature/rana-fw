@@ -6,6 +6,7 @@
 #include <SPIFFS.h>
 #include <DallasTemperature.h>   
 #include "FSWrapper.h"
+#include "utils.h"
 #include <map>
 
 
@@ -15,7 +16,6 @@ namespace Rana
 
 
 
-typedef std::array<uint8_t,8> DevAddrArray_t;
 class Config
 {
 protected:

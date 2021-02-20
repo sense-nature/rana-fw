@@ -16,8 +16,10 @@ bool areEqual(const DevAddrArray_t & lhs, const DevAddrArray_t & rhs)
     return true;
 }
 
-void OWTemperatures::ReadValues(Config & conf) 
+void OWTemperatures::ReadValues(Config & conf, Status &status) 
 {
+    status.knownProbeTemperatures.clear();
+    status.unknownProbeTemperatures.clear();
     auto temps = Rana::Device::ReadDS18B20Temperatures();
     std::set<uint8_t> unknown;
     for(size_t i =0; i<temps.size(); i++)
@@ -34,6 +36,7 @@ void OWTemperatures::ReadValues(Config & conf)
             }
         }
         if(found){
+            status.knownProbeTemperatures[x.first]={x.second,  temps[tIndex].second};
             Serial.printf("T%d [%s] = %.2f *C\n", x.first, binToHexString(x.second.data(),x.second.size()).c_str(), temps[tIndex].second);
             unknown.erase(tIndex);
         } else {
@@ -44,6 +47,7 @@ void OWTemperatures::ReadValues(Config & conf)
         Serial.println("Unknown probes: ");
         for( auto i : unknown){
             Serial.printf("[0x%s] = %.2f *C \n", binToHexString(temps[i].first.data(), temps[i].first.size()).c_str(),temps[i].second);
+            status.unknownProbeTemperatures.push_back({temps[i].first, temps[i].second});
         }
     }
 }

@@ -2,6 +2,7 @@
 #define __OWTEMPERATURES_H__
 
 #include "Config.h"
+#include "Status.h"
 
 
 namespace Rana{
@@ -20,7 +21,7 @@ public:
     OWTemperatures &operator=(const OWTemperatures &) = default;
     ~OWTemperatures() = default;
 
-    static void ReadValues( Config & conf );
+    static void ReadValues( Config & conf, Status & status );
 
 
 private:

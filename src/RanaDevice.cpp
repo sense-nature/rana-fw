@@ -6,10 +6,16 @@
 
 #include <DallasTemperature.h>
 #include <OneWire.h>    
+#include <SPI.h>
+#include "OWTemperatures.h"
 
 #include "utils.h"
 
 using namespace Rana;
+
+
+
+
 
 void Device::VextON(void)
 {
@@ -39,9 +45,19 @@ void Device::LedOFF()
     digitalWrite(LED_BUILTIN, LOW);    
 }
 
-void Device::InitSerial() 
+void Device::StartDevice() 
 {
-    Serial.begin(115200ul);
+    status.startUpNow();
+	Serial.begin(115200ul);
+	ESP_LOGI(TAG, "Rana start");
+	ESP_LOGD(TAG, "At setup start : free heap: %gKB",esp_get_free_heap_size()/1024.0);	
+	esp_bt_controller_disable();       
+	Rana::Device::VextON();
+	Rana::Device::GetDisplay();
+	config.ReadConfig();
+	config.ShowConfig();
+	OWTemperatures::ReadValues(config,status);
+
 }
 
 /**
@@ -139,14 +155,40 @@ std::vector<std::pair<DevAddrArray_t,float>>  Device::ReadDS18B20Temperatures()
 
 
 
+constexpr uint64_t sToMicroS(uint64_t seconds)
+{
+	return seconds * 1000 * 1000 /*uS_TO_S_FACTOR*/;
+}
+
+constexpr uint64_t milliToMicroS(uint64_t millis)
+{
+	return millis * 1000 /*uS_TO_mS_FACTOR*/;
+}
+
+constexpr uint64_t sToMilliS(uint64_t seconds)
+{
+	return seconds * 1000 /*mS_TO_S_FACTOR*/;
+}
+
 
 void Device::GotoDeepSleep() 
 {
 	Serial.println("Going to deep sleep.");
-  //from https://github.com/Heltec-Aaron-Lee/WiFi_Kit_series/issues/6#issuecomment-518896314
-   pinMode(RST_LoRa,INPUT);  
+	SPI.end();
 
-   VextOFF();
-   esp_deep_sleep_start();    
+	//from https://github.com/Heltec-Aaron-Lee/WiFi_Kit_series/issues/6#issuecomment-518896314
+	pinMode(RST_LoRa,INPUT);  
+
+	uint64_t sleepTimeUs = sToMicroS(config.TimeBetween);
+	auto workTimeMs = status.millisFromStart();
+	ESP_LOGI(TAG,"Work time %dms",workTimeMs);
+	sleepTimeUs -=  milliToMicroS(workTimeMs); 
+	esp_sleep_enable_timer_wakeup(sleepTimeUs);
+	ESP_LOGI(TAG,"Going to deep sleep for %ds\n", sleepTimeUs/1000/1000);
+	Serial.end();
+	VextOFF();
+	esp_deep_sleep_start();    
 }
+
+
 

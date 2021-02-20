@@ -10,13 +10,15 @@
 
 #include <esp_wifi.h>
 #include <esp_bt.h>  
+#include <esp_sleep.h>
 
+#include "Config.h"
+#include "Status.h"
 
 
 namespace Rana
 {
     
-
 
 class Device 
 {
@@ -27,12 +29,18 @@ protected:
 
     const static uint8_t Battery_Pin = 13;
 
-public:
-    static void InitSerial();
-    static void InitLCD();
 
-    static void VextON();
-    static void VextOFF();
+
+    Config config;
+    Status status;
+
+
+public:
+    void StartDevice();
+    void InitLCD();
+
+    void VextON();
+    void VextOFF();
 
     static void LedON();
     static void LedOFF();
@@ -46,9 +54,7 @@ public:
     void SaveConfigToSD();
 
 
-    static void GotoDeepSleep();
-
-         
+    void GotoDeepSleep();
 };
 
 

@@ -12,6 +12,9 @@ namespace Rana{
 class OWTemperatures
 {
     
+protected:
+    static std::vector<std::pair<DevAddrArray_t,float>>  ReadBus(uint8_t pin);
+
 
 public:
     OWTemperatures() = default;
@@ -21,7 +24,8 @@ public:
     OWTemperatures &operator=(const OWTemperatures &) = default;
     ~OWTemperatures() = default;
 
-    static void ReadValues( Config & conf, Status & status );
+    static void ReadValues(uint8_t busPin, Config & conf, Status & status );
+
 
 
 private:

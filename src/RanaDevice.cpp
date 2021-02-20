@@ -1,5 +1,8 @@
 #include "RanaDevice.h"
 #include <Arduino.h>
+#include <RtcDS3231.h>
+#include <EepromAT24C32.h>
+
 #include <driver/adc.h>
 
 #include <esp_system.h>
@@ -49,16 +52,105 @@ void Device::StartDevice()
 {
     status.startUpNow();
 	Serial.begin(115200ul);
+	Rana::Device::VextON();
+	Wire.begin(SDA_Pin, SCL_Pin);
+	ReadRTCData();
+
+
+
 	ESP_LOGI(TAG, "Rana start");
 	ESP_LOGD(TAG, "At setup start : free heap: %gKB",esp_get_free_heap_size()/1024.0);	
 	esp_bt_controller_disable();       
-	Rana::Device::VextON();
 	Rana::Device::GetDisplay();
 	config.ReadConfig();
 	config.ShowConfig();
-	OWTemperatures::ReadValues(config,status);
+	OWTemperatures::ReadValues(OneWire_Pin, config ,status);
 
 }
+
+void Device::ReadRTCData()
+{
+	const RtcDateTime compilation = RtcDateTime(__DATE__, __TIME__);
+    ESP_LOGI(TAG,"Compilation date: %4u-%2u-%2u %2u:%2u:%2u", 
+		compilation.Year(), 
+		compilation.Month(), 
+		compilation.Day(), 
+		compilation.Hour(), 
+		compilation.Minute(),
+		compilation.Second()
+	);
+
+	RtcDS3231<TwoWire> rtc(Wire);
+	rtc.Begin();
+	bool readEeprom = false;
+	if( ! rtc.IsDateTimeValid() ){
+		if( rtc.LastError() != 0 ){
+			ESP_LOGE(TAG, "RTC I2C communication error %d",rtc.LastError() );
+		} else { 
+			ESP_LOGE(TAG, "RTC low battery or similar error");
+			readEeprom = true;
+		}
+	} 
+	if( rtc.LastError() == 0 ) {
+		if( ! rtc.GetIsRunning() ){
+			ESP_LOGE(TAG, "RTC not running");
+		} else {
+			RtcDateTime now = rtc.GetDateTime();
+    		if (now <  compilation ) {
+				readEeprom = false;
+				rtc.SetIsRunning(false);
+				ESP_LOGI(TAG,"RTC time earlier than compitaltion time -> stopping");
+		    } else {
+				status.rtc = true;
+				status.utcRtcStartupTime = rtc.GetDateTime();
+				ESP_LOGI(TAG,"Set UTC status time to RTC %4u-%2.2u-%2.2u %2u:%2u:%2u", 
+					status.utcRtcStartupTime.Year(), 
+					status.utcRtcStartupTime.Month(), 
+					status.utcRtcStartupTime.Day(), 
+					status.utcRtcStartupTime.Hour(), 
+					status.utcRtcStartupTime.Minute(),
+					status.utcRtcStartupTime.Second()
+				);
+			}
+		}
+		rtc.Enable32kHzPin(false);
+    	rtc.SetSquareWavePin(DS3231SquareWavePin_ModeNone); 
+	}
+
+	EepromAt24c32<TwoWire> eeprom(Wire);
+	eeprom.Begin();
+	const uint16_t valueAddress = 0;
+
+
+	ESP_LOGD(TAG,"Current boot count: %u, measurement count: %u", staticBootCount, status.measurementCount);
+	if( readEeprom && eeprom.LastError() == 0 ){
+		uint32_t eepromValue = 0;
+		auto res = eeprom.GetMemory(valueAddress, (uint8_t*)&eepromValue, sizeof(eepromValue));
+		Wire.flush();
+		ESP_LOGI(TAG,"AT24c32 EEPROM: Read %uB, value=%u  ", res, eepromValue);
+		if( eeprom.LastError() != 0 ){
+			ESP_LOGE(TAG,"Reading form EEPROM error=%d",eeprom.LastError());
+		} else {
+			if( res == sizeof(eepromValue) && eepromValue >= staticBootCount ){
+				eepromValue++;
+				status.setMeasurementCount(eepromValue);
+				ESP_LOGI(TAG, "Updated measurementCount to %u",eepromValue);
+			} else {
+				ESP_LOGI(TAG, "Read %B-value smaller then the current bootCount %u",res,staticBootCount);
+			}
+		}
+	}
+	if( eeprom.LastError() == 0 ){
+		eeprom.SetMemory(valueAddress, (uint8_t*)&status.measurementCount, sizeof(status.measurementCount));
+		if( eeprom.LastError() == 0 )
+			ESP_LOGI(TAG,"Written %u current measurement number to the EEPROM",status.measurementCount);
+		else			
+			ESP_LOGE(TAG,"Error %d on writng to the EEPROM", eeprom.LastError());
+	} else {
+		ESP_LOGE(TAG,"No writing to the EEPROM because of earlier error.");
+	}
+}
+
 
 /**
  * Returns a raw value from the integrated voltage divider. 
@@ -87,7 +179,7 @@ uint16_t Device::RawBatteryVoltage()
 SSD1306Wire * Device::GetDisplay() {
 	static SSD1306Wire * pDisplay = 0;
 	if( pDisplay == 0 ){
-		pDisplay = new SSD1306Wire(0x3c, SDA_Pin, SCL_Pin, GEOMETRY_128_64);
+		pDisplay = new SSD1306Wire(0x3c);//, SDA_Pin, SCL_Pin, GEOMETRY_128_64);
 		pDisplay->init();
 		pDisplay->setFont(ArialMT_Plain_10);  
 	}
@@ -117,44 +209,6 @@ void printOneWireAddress(DeviceAddress deviceAddress)
 
 
 
-std::vector<std::pair<DevAddrArray_t,float>>  Device::ReadDS18B20Temperatures() 
-{
-	std::vector<std::pair<DevAddrArray_t,float>>  temps;
-    OneWire w1(OneWire_Pin);
-	DallasTemperature ds18b20(&w1);
-	ds18b20.begin();
-	ds18b20.setResolution(12);
-	ds18b20.setCheckForConversion(false);
-	ds18b20.requestTemperatures();
-	delay(200u);
-	uint8_t n = ds18b20.getDS18Count();
-	temps.reserve(n);
-	 if( n > 0 ){
-        DeviceAddress addr = {0};
-        Serial.println("Detected "+String(n)+" DS18B20 sensor(s) on the bus");
-		    Serial.println("Detected DS18B20 sensors:");
-		    Serial.print("{");
-		    for(uint8_t i=0; i < n ; i++){
-				ds18b20.getAddress(addr, i);
-				if(i >0)
-					Serial.println(",");
-				printOneWireAddress(addr);
-                auto t = ds18b20.getTempC(addr);
-				temps.push_back({toDevAddrArray(addr) ,t});
-				Serial.print(": " + String(t)  + " *C ");
-				GetDisplay()->drawString(35, i*10, String(i+1) + ": "+ String(t));
-				GetDisplay()->display();
-		    }
-		    Serial.println("};");
-
-		}
-    pinMode(OneWire_Pin ,OUTPUT);
-    digitalWrite(OneWire_Pin, LOW);     
-    return temps;
-}
-
-
-
 constexpr uint64_t sToMicroS(uint64_t seconds)
 {
 	return seconds * 1000 * 1000 /*uS_TO_S_FACTOR*/;
@@ -175,7 +229,8 @@ void Device::GotoDeepSleep()
 {
 	Serial.println("Going to deep sleep.");
 	SPI.end();
-
+	adc_power_off();
+	
 	//from https://github.com/Heltec-Aaron-Lee/WiFi_Kit_series/issues/6#issuecomment-518896314
 	pinMode(RST_LoRa,INPUT);  
 

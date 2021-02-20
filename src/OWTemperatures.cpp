@@ -16,11 +16,11 @@ bool areEqual(const DevAddrArray_t & lhs, const DevAddrArray_t & rhs)
     return true;
 }
 
-void OWTemperatures::ReadValues(Config & conf, Status &status) 
+void OWTemperatures::ReadValues(uint8_t pin, Config & conf, Status &status) 
 {
     status.knownProbeTemperatures.clear();
     status.unknownProbeTemperatures.clear();
-    auto temps = Rana::Device::ReadDS18B20Temperatures();
+    auto temps = ReadBus(pin);
     std::set<uint8_t> unknown;
     for(size_t i =0; i<temps.size(); i++)
         unknown.insert((uint8_t)i);
@@ -51,3 +51,32 @@ void OWTemperatures::ReadValues(Config & conf, Status &status)
         }
     }
 }
+
+
+
+std::vector<std::pair<DevAddrArray_t,float>>  OWTemperatures::ReadBus(uint8_t pin) 
+{
+	std::vector<std::pair<DevAddrArray_t,float>>  temps;
+    OneWire w1(pin);
+	DallasTemperature ds18b20(&w1);
+	ds18b20.begin();
+	ds18b20.setResolution(12);
+	ds18b20.setCheckForConversion(false);
+	ds18b20.requestTemperatures();
+	delay(200u);
+	uint8_t n = ds18b20.getDS18Count();
+	temps.reserve(n);
+	 if( n > 0 ){
+        DeviceAddress addr = {0};
+        ESP_LOGD(TAG, "Detected %d DS18B20 sensor(s) on the bus",n);
+        for(uint8_t i=0; i < n ; i++){
+            ds18b20.getAddress(addr, i);
+            auto t = ds18b20.getTempC(addr);
+            temps.push_back({toDevAddrArray(addr) ,t});
+        }
+    }
+    pinMode(pin ,OUTPUT);
+    digitalWrite(pin, LOW);     
+    return temps;
+}
+

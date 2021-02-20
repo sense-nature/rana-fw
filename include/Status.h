@@ -9,6 +9,8 @@
 #include <vector>
 #include "utils.h"
 
+#include <RtcDS3231.h>
+
 #include <esp_wifi.h>
 #include <esp_bt.h>  
 #include <esp_sleep.h>
@@ -34,8 +36,13 @@ public:
     esp_sleep_wakeup_cause_t wakeUpReson = ESP_SLEEP_WAKEUP_UNDEFINED;
 
     unsigned long startupTime = 0;   
+    uint32_t measurementCount = 0;
+
     bool lcd = false;
+
     bool rtc = false;
+    RtcDateTime utcRtcStartupTime;
+
     bool sd = false;
     uint16_t batteryLevel = 0 ;
     SensorType internalSensor = SensorType::NoSensor; 
@@ -50,6 +57,7 @@ public:
 
     void startUpNow();
     uint32_t getBootCount() const;
+    bool setMeasurementCount(uint32_t newCount);
     const char * getWUResonStr();
     unsigned long millisFromStart();
 

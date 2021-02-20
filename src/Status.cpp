@@ -15,6 +15,7 @@ void Status::startUpNow(){
     startupTime = millis();
     wakeUpReson = esp_sleep_get_wakeup_cause();
     staticBootCount++;
+    measurementCount = staticBootCount;
     ESP_LOGI(TAG, "WakeUp reason: %s", getWUResonStr() );
 
 }
@@ -23,6 +24,16 @@ uint32_t Status::getBootCount() const
 {
     return staticBootCount;
 }
+
+bool Status::setMeasurementCount(uint32_t newCount)  
+{
+    if( measurementCount < newCount ){
+        measurementCount = newCount;
+        return true;
+    }
+    return false;
+}
+
 
 const char * Status::getWUResonStr()
 {

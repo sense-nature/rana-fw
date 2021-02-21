@@ -1,5 +1,8 @@
 #include "Status.h"
 #include "rana_logging.h"
+#include <ArduinoJson.h>
+#include "FSWrapper.h"
+#include <sstream>
 
 
 using namespace Rana;
@@ -67,5 +70,45 @@ const char * Status::getWUResonStr()
 unsigned long Status::millisFromStart()
 {
     return millis() - startupTime;
+}
+
+String RtcTSToString(const RtcDateTime & rts){
+    return String(rts.Year())+"-"
+            +String(rts.Month())+"-"
+            +String(rts.Day())+" "
+            +String(rts.Hour())+":"
+            +String(rts.Minute())+":"
+            +String(rts.Second());
+}
+
+bool Status::SaveToSD() 
+{
+    //StaticJsonDocument<JSON_DOC_BUFFER_SIZE> json;
+    DynamicJsonDocument json(3000);
+
+    json["TS"] = RtcTSToString(utcRtcStartupTime);
+    json["bootCount"] = staticBootCount;
+    json["measurementCount"] = measurementCount;
+    json["batteryLevel"] = batteryLevel;
+    if(internalSensor!=SensorType::NoSensor){
+        json["intTemp"]=intTemperature;
+        json["intHum"]=intHumidity;
+    }
+    JsonObject definedProbes = json.createNestedObject("definedProbes");
+    for(auto it = knownProbeTemperatures.begin(); it != knownProbeTemperatures.end(); it++){
+        JsonObject kp = definedProbes.createNestedObject(String((uint8_t)it->first,10));
+        kp["address"] = devAddrToString(it->second.first);
+        kp["value"] = it->second.second;
+
+    }
+    JsonObject unknownProbes = json.createNestedObject("uknownProbes");
+    for(auto it = unknownProbeTemperatures.begin(); it != unknownProbeTemperatures.end(); it++){
+        unknownProbes[devAddrToString(it->first)] = it->second;
+    }
+    FSWrapper::writeJsonDoc("/status.log", json, FILE_APPEND);
+    serializeJson(json, Serial);
+    Serial.println("End of jsoned Status");
+    return json.size();
+
 }
 

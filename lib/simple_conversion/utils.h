@@ -15,3 +15,4 @@ String binToHexString(const uint8_t *data, size_t size);
 size_t hexStringToBin(const char * str, uint8_t * data, size_t size);;
 
 String devAddrToString(const DeviceAddress & da);
+String devAddrToString(const DevAddrArray_t & da);

@@ -34,7 +34,7 @@ bool Config::SaveConfig(){
         ProbesObj[String((uint8_t)it->first,10)] = binToHexString(it->second.data(), sizeof(DevAddrArray_t));
 
     //auto result = 
-    FSWrapper::writeJsonDoc(CONFIG_FILE, json);
+    FSWrapper::writeJsonDoc(CONFIG_FILE, json, FILE_WRITE);
     Serial.println("Serialized json:");
     serializeJson(json, Serial);
     Serial.println("End of json");

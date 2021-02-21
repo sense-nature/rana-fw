@@ -28,10 +28,10 @@ protected:
 public:
 static void begin();
     static bool readJsonDoc(const char * path, JsonDocument &json);
-    static size_t writeJsonDoc(const char * path, const JsonDocument & json);
+    static size_t writeJsonDoc(const char * path, const JsonDocument & json, const char * mode);
 
     static String readFileToString(const char * path); 
-    static size_t appendToFile(const char *path, const String & data);
+
 
 
 };

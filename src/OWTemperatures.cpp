@@ -87,7 +87,11 @@ std::vector<std::pair<DevAddrArray_t,float>>  OWTemperatures::ReadBus(uint8_t pi
 	ds18b20.requestTemperatures();
 	delay(200u);
 	uint8_t n = ds18b20.getDS18Count();
-	temps.reserve(n);
+    if( n==0 ){
+        delay(200);
+        n = ds18b20.getDS18Count();
+    }
+    temps.reserve(n);
 	 if( n > 0 ){
         DeviceAddress addr = {0};
         ESP_LOGD(TAG, "Detected %d DS18B20 sensor(s) on the bus",n);

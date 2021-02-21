@@ -32,15 +32,16 @@ public:
     constexpr static float NotDefined = -127.0;
     enum class SensorType { NoSensor, BME280, HTU21 };
     enum class RTCState { NoRTC, SetFromBuildTime, SetFromOtherSource, RTC_OK };
-    
+
+//ToDo: Add MAC addr, chip ID, type, framework version 
     String nodeName; 
     esp_sleep_wakeup_cause_t wakeUpReson = ESP_SLEEP_WAKEUP_UNDEFINED;
+
 
     unsigned long startupTime = 0;   
     uint32_t measurementCount = 0;
 
     bool lcd = false;
-
     RTCState rtc = RTCState::NoRTC;
     RtcDateTime utcRtcStartupTime;
 
@@ -63,6 +64,7 @@ public:
     unsigned long millisFromStart();
 
     bool enterConfigMode();
+    bool SaveToSD();
 
 
 

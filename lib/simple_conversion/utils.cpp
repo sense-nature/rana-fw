@@ -54,6 +54,11 @@ String devAddrToString(const DeviceAddress & da)
 }
 
 
+String devAddrToString(const DevAddrArray_t & da)
+{
+    return String("0x")+binToHexString(da.data(), da.size());
+}
+
 DevAddrArray_t toDevAddrArray(const DeviceAddress & da){
     DevAddrArray_t result;
     memcpy(result.data(), da, result.size());

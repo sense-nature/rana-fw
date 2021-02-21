@@ -148,25 +148,20 @@ bool FSWrapper::readJsonDoc(const char * path, JsonDocument & json)
  * valid modes for writing: FILE_APPEND, FILE_WRITE  ("a" | "w")
  * 
  **/
-size_t FSWrapper::writeJsonDoc(const char * path, const JsonDocument & json) 
+size_t FSWrapper::writeJsonDoc(const char * path, const JsonDocument & json, const char * mode) 
 {
     ESP_LOGD(TAG,"Writing file: %s\n", path);
 
-    File file = getFS().open(path, FILE_WRITE);
+    File file = getFS().open(path, mode);
     if(!file){
         ESP_LOGE(TAG,"Failed to open file %s for writing ",path);
         return false;
     } else {
         auto res = serializeJson(json, file);
+        if( strcmp(mode,FILE_APPEND) == 0 )
+            file.write('\n');
         file.close();
         return res;
     }
-}
-
-
-size_t FSWrapper::appendToFile(const char *path, const String & data) 
-{
-
-    return 0;
 }
 

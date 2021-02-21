@@ -69,6 +69,11 @@ void Device::StartDevice()
 	UpdateEepromData();
 	UpdateRTCData();
 	OWTemperatures::ReadValues(OneWire_Pin, config ,status);
+	GetDisplay()->flipScreenVertically();
+	GetDisplay()->drawString(0, 0, "# " + String(status.getBootCount())+" | "+String(status.measurementCount)); 
+	GetDisplay()->drawString(0, 33," probes: " + String(status.unknownProbeTemperatures.size() +status.knownProbeTemperatures.size()));
+	GetDisplay()->display();
+	delay(1000);
 	GetInternalSensorValues();
 	GetBatteryLevel();
 
@@ -290,11 +295,13 @@ constexpr uint64_t sToMilliS(uint64_t seconds)
 void Device::GotoDeepSleep() 
 {
 	Serial.println("Going to deep sleep.");
-	SPI.end();
 	adc_power_off();
 	
 	//from https://github.com/Heltec-Aaron-Lee/WiFi_Kit_series/issues/6#issuecomment-518896314
-	pinMode(RST_LoRa,INPUT);  
+	pinMode(RST_LoRa,INPUT);
+	status.SaveToSD();  
+	SPI.end();
+
 
 /*
 	pinMode(KEY_BUILTIN, INPUT_PULLDOWN);

@@ -7,6 +7,7 @@
 #include <DallasTemperature.h>   
 #include "FSWrapper.h"
 #include "utils.h"
+#include "Status.h" 
 #include <map>
 
 
@@ -64,7 +65,7 @@ public:
     Config();
     ~Config(){};
     bool SaveConfig();
-    void ReadConfig();
+    void ReadConfig( Status & status );
     void ShowConfig();
 
 };

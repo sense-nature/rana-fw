@@ -24,6 +24,7 @@ void OWTemperatures::ReadValues(uint8_t pin, Config & conf, Status &status)
     std::set<uint8_t> unknown;
     for(size_t i =0; i<temps.size(); i++)
         unknown.insert((uint8_t)i);
+    Serial.println("Defined probes:");
     for( auto & x : conf.Probes){
         bool found = false;
         size_t tIndex = 0;
@@ -44,13 +45,34 @@ void OWTemperatures::ReadValues(uint8_t pin, Config & conf, Status &status)
         }
     }
     if( ! unknown.empty() ){
+        int j=1;
         Serial.println("Unknown probes: ");
         for( auto i : unknown){
-            Serial.printf("[0x%s] = %.2f *C \n", binToHexString(temps[i].first.data(), temps[i].first.size()).c_str(),temps[i].second);
+            Serial.printf("%2d [0x%s] = %.2f *C \n", j,binToHexString(temps[i].first.data(), temps[i].first.size()).c_str(),temps[i].second);
             status.unknownProbeTemperatures.push_back({temps[i].first, temps[i].second});
+            j++;
         }
     }
 }
+
+
+
+bool compareBinArray(const DevAddrArray_t & l, const DevAddrArray_t & r) 
+{ 
+    for(size_t i = 0; i<l.size(); i++){
+        if(l[i] < r[i])
+            return true;
+        if( l[i] > r[i])
+            return false;
+    }
+    return false;
+} 
+
+
+bool compareAddrValue(const std::pair<DevAddrArray_t,float> & l, const std::pair<DevAddrArray_t,float> & r)
+{
+    return compareBinArray(l.first,r.first);
+} 
 
 
 
@@ -75,6 +97,7 @@ std::vector<std::pair<DevAddrArray_t,float>>  OWTemperatures::ReadBus(uint8_t pi
             temps.push_back({toDevAddrArray(addr) ,t});
         }
     }
+    std::sort(temps.begin(), temps.end(), compareAddrValue);
     pinMode(pin ,OUTPUT);
     digitalWrite(pin, LOW);     
     return temps;

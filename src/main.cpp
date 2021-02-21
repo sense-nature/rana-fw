@@ -19,6 +19,9 @@ void setup()
 }
 
 void loop() {
+  Rana::Device::LedON();
+  
+/*
 
   byte error, address;
   int nDevices;
@@ -56,22 +59,9 @@ void loop() {
   else
     Serial.println("done\n");
 
-
-
-
-
-
-
-
-
-
-
-
-  Rana::Device::LedON();
-  delay(1000);
+*/
+  delay(300);
   Rana::Device::LedOFF();
-  //Serial.println("Led OFF");
-  delay(1000);
   theDevice.GotoDeepSleep();
 }
 

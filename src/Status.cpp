@@ -5,6 +5,7 @@
 using namespace Rana;
 
 RTC_DATA_ATTR uint32_t Rana::staticBootCount = 0;
+volatile  bool Rana::staticKeyPressChange = false;
 
 
 Status::Status(){}
@@ -33,6 +34,18 @@ bool Status::setMeasurementCount(uint32_t newCount)
     }
     return false;
 }
+
+bool Status::enterConfigMode() 
+{
+    if( ! unknownProbeTemperatures.empty() )
+        return true;
+    if( staticKeyPressChange )
+        return true;
+        
+    return false;    
+}
+
+
 
 
 const char * Status::getWUResonStr()

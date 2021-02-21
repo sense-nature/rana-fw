@@ -46,10 +46,14 @@ public:
     static void LedOFF();
 
 
-    void ReadRTCData();
+    void UpdateRTCData();
+    void UpdateEepromData();
+    void GetInternalSensorValues();
+    void GetBatteryLevel();
 
+	void startWebConfig();
+    void sendMeasurementsOveLoRaWAN();
 
-    static uint16_t RawBatteryVoltage();
     static SSD1306Wire * GetDisplay();
     static std::vector<std::pair<DevAddrArray_t,float>> ReadDS18B20Temperatures();
 

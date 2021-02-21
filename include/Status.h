@@ -22,7 +22,7 @@ namespace Rana
 
 
 extern RTC_DATA_ATTR uint32_t staticBootCount;
-
+extern volatile bool staticKeyPressChange;
 
 
 
@@ -31,6 +31,7 @@ class Status
 public:
     constexpr static float NotDefined = -127.0;
     enum class SensorType { NoSensor, BME280, HTU21 };
+    enum class RTCState { NoRTC, SetFromBuildTime, SetFromOtherSource, RTC_OK };
     
     String nodeName; 
     esp_sleep_wakeup_cause_t wakeUpReson = ESP_SLEEP_WAKEUP_UNDEFINED;
@@ -40,7 +41,7 @@ public:
 
     bool lcd = false;
 
-    bool rtc = false;
+    RTCState rtc = RTCState::NoRTC;
     RtcDateTime utcRtcStartupTime;
 
     bool sd = false;
@@ -61,10 +62,13 @@ public:
     const char * getWUResonStr();
     unsigned long millisFromStart();
 
+    bool enterConfigMode();
+
 
 
 
 };
+
 
 
 

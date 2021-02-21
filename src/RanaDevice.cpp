@@ -1,22 +1,29 @@
 #include "RanaDevice.h"
+#include "OWTemperatures.h"
+#include "utils.h"
+
 #include <Arduino.h>
-#include <RtcDS3231.h>
-#include <EepromAT24C32.h>
-
 #include <driver/adc.h>
-
 #include <esp_system.h>
-
 #include <DallasTemperature.h>
 #include <OneWire.h>    
 #include <SPI.h>
-#include "OWTemperatures.h"
 
-#include "utils.h"
+#include <RtcDS3231.h>
+#include <EepromAT24C32.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BME280.h> 
+
 
 using namespace Rana;
 
 
+extern volatile bool Rana::staticKeyPressChange;
+
+
+void IRAM_ATTR keyPressed() {
+	staticKeyPressChange = true;
+}
 
 
 
@@ -24,7 +31,7 @@ void Device::VextON(void)
 {
     pinMode(Vext,OUTPUT);
     digitalWrite(Vext, LOW);
-    delay(10u);
+    delay(100u);
 }
 
 
@@ -51,93 +58,148 @@ void Device::LedOFF()
 void Device::StartDevice() 
 {
     status.startUpNow();
+//	attachInterrupt(KEY_BUILTIN, keyPressed, CHANGE);
 	Serial.begin(115200ul);
+	ESP_LOGI(TAG, "\n--------------\n----------------\nRana start");
 	Rana::Device::VextON();
-	Wire.begin(SDA_Pin, SCL_Pin);
-	ReadRTCData();
-
-
-
-	ESP_LOGI(TAG, "Rana start");
-	ESP_LOGD(TAG, "At setup start : free heap: %gKB",esp_get_free_heap_size()/1024.0);	
-	esp_bt_controller_disable();       
-	Rana::Device::GetDisplay();
-	config.ReadConfig();
+	config.ReadConfig(status);
 	config.ShowConfig();
+	Wire.begin(SDA_Pin, SCL_Pin);
+	Rana::Device::GetDisplay();
+	UpdateEepromData();
+	UpdateRTCData();
 	OWTemperatures::ReadValues(OneWire_Pin, config ,status);
+	GetInternalSensorValues();
+	GetBatteryLevel();
+
+	if(status.enterConfigMode() ){
+		startWebConfig();
+	} else {
+		sendMeasurementsOveLoRaWAN();
+	}
+
+
+
+	ESP_LOGD(TAG, "At setup start : free heap: %gKB",esp_get_free_heap_size()/1024.0);	
+
 
 }
 
-void Device::ReadRTCData()
+
+void  Device::startWebConfig()
 {
-	const RtcDateTime compilation = RtcDateTime(__DATE__, __TIME__);
-    ESP_LOGI(TAG,"Compilation date: %4u-%2u-%2u %2u:%2u:%2u", 
-		compilation.Year(), 
-		compilation.Month(), 
-		compilation.Day(), 
-		compilation.Hour(), 
-		compilation.Minute(),
-		compilation.Second()
+	ESP_LOGI("Starting web config");
+
+}
+
+void  Device::sendMeasurementsOveLoRaWAN()
+{
+	ESP_LOGI("Sending the data over LoRaWAN");
+
+}
+
+
+void Device::GetInternalSensorValues()
+{
+	Adafruit_BME280 bme;
+	if( ! bme.begin(0x76, &Wire) )
+		return;
+	status.internalSensor = Status::SensorType::BME280;
+
+	bme.setSampling(Adafruit_BME280::sensor_mode::MODE_FORCED
+					, Adafruit_BME280::sensor_sampling::SAMPLING_X1
+					, Adafruit_BME280::sensor_sampling::SAMPLING_X1
+					, Adafruit_BME280::sensor_sampling::SAMPLING_X1
+					,Adafruit_BME280::sensor_filter::FILTER_OFF);
+
+	status.intTemperature = bme.readTemperature(); /* *C */
+	status.intHumidity = roundf(bme.readHumidity()); /* % */
+	status.intPressure = roundf(bme.readPressure() / 100.0F /* hPa */);
+}
+
+
+
+void Device::UpdateRTCData()
+{
+	//ESP_LOGI(TAG,"Build time %s", 
+	time_t bt_unix = PROJECT_BUILD_TIME;;
+	struct tm bt;
+	gmtime_r(&bt_unix, &bt);
+	const RtcDateTime buildTS = RtcDateTime(bt.tm_year+1900, bt.tm_mon+1, bt.tm_mday,bt.tm_hour, bt.tm_min, bt.tm_sec);	
+	ESP_LOGI(TAG,"Build timestamp UTC date: %04u-%02u-%02u %02u:%02u:%02u", 
+		buildTS.Year(), 
+		buildTS.Month(), 
+		buildTS.Day(), 
+		buildTS.Hour(), 
+		buildTS.Minute(),
+		buildTS.Second()
 	);
 
 	RtcDS3231<TwoWire> rtc(Wire);
 	rtc.Begin();
-	bool readEeprom = false;
 	if( ! rtc.IsDateTimeValid() ){
 		if( rtc.LastError() != 0 ){
 			ESP_LOGE(TAG, "RTC I2C communication error %d",rtc.LastError() );
+			status.rtc = Status::RTCState::NoRTC;
 		} else { 
-			ESP_LOGE(TAG, "RTC low battery or similar error");
-			readEeprom = true;
+			ESP_LOGE(TAG, "RTC low battery or time not set in the RTC");
 		}
 	} 
 	if( rtc.LastError() == 0 ) {
+		RtcDateTime buildPlus1m(buildTS.Year(), 
+			buildTS.Month(), 
+			buildTS.Day(), 
+			buildTS.Hour(), 
+			buildTS.Minute()+1,
+			buildTS.Second());
 		if( ! rtc.GetIsRunning() ){
-			ESP_LOGE(TAG, "RTC not running");
+			ESP_LOGI(TAG,"RTC not running -> setting to build timestamp + 1 minute");
+			rtc.SetIsRunning(true);
+			rtc.SetDateTime(buildPlus1m);
+			status.rtc = Status::RTCState::SetFromBuildTime;
 		} else {
 			RtcDateTime now = rtc.GetDateTime();
-    		if (now <  compilation ) {
-				readEeprom = false;
-				rtc.SetIsRunning(false);
-				ESP_LOGI(TAG,"RTC time earlier than compitaltion time -> stopping");
-		    } else {
-				status.rtc = true;
-				status.utcRtcStartupTime = rtc.GetDateTime();
-				ESP_LOGI(TAG,"Set UTC status time to RTC %4u-%2.2u-%2.2u %2u:%2u:%2u", 
-					status.utcRtcStartupTime.Year(), 
-					status.utcRtcStartupTime.Month(), 
-					status.utcRtcStartupTime.Day(), 
-					status.utcRtcStartupTime.Hour(), 
-					status.utcRtcStartupTime.Minute(),
-					status.utcRtcStartupTime.Second()
-				);
+    		if (now <  buildTS ) {
+				rtc.SetDateTime(buildPlus1m);
+				ESP_LOGI(TAG,"RTC time earlier than build time -> setting to build timestamp + 1 minute");
+				status.rtc = Status::RTCState::SetFromBuildTime;
+			} else {
+				status.rtc = Status::RTCState::RTC_OK;
+
 			}
-		}
+		}	
+		status.utcRtcStartupTime = rtc.GetDateTime();
+		ESP_LOGI(TAG,"Set UTC status time from the RTC %4u-%02u-%02u %02u:%02u:%02u", 
+			status.utcRtcStartupTime.Year(), 
+			status.utcRtcStartupTime.Month(), 
+			status.utcRtcStartupTime.Day(), 
+			status.utcRtcStartupTime.Hour(), 
+			status.utcRtcStartupTime.Minute(),
+			status.utcRtcStartupTime.Second()
+		);
 		rtc.Enable32kHzPin(false);
     	rtc.SetSquareWavePin(DS3231SquareWavePin_ModeNone); 
 	}
 
+}
+void Device::UpdateEepromData()
+{
 	EepromAt24c32<TwoWire> eeprom(Wire);
 	eeprom.Begin();
 	const uint16_t valueAddress = 0;
-
-
 	ESP_LOGD(TAG,"Current boot count: %u, measurement count: %u", staticBootCount, status.measurementCount);
-	if( readEeprom && eeprom.LastError() == 0 ){
-		uint32_t eepromValue = 0;
-		auto res = eeprom.GetMemory(valueAddress, (uint8_t*)&eepromValue, sizeof(eepromValue));
-		Wire.flush();
-		ESP_LOGI(TAG,"AT24c32 EEPROM: Read %uB, value=%u  ", res, eepromValue);
-		if( eeprom.LastError() != 0 ){
-			ESP_LOGE(TAG,"Reading form EEPROM error=%d",eeprom.LastError());
+	uint32_t eepromValue = 0;
+	auto res = eeprom.GetMemory(valueAddress, (uint8_t*)&eepromValue, sizeof(eepromValue));
+	ESP_LOGI(TAG,"AT24c32 EEPROM: Read %uB, value=%u  ", res, eepromValue);
+	if( eeprom.LastError() != 0 ){
+		ESP_LOGE(TAG,"Reading form EEPROM error=%d",eeprom.LastError());
+	} else {
+		if( res == sizeof(eepromValue) && eepromValue >= staticBootCount ){
+			eepromValue++;
+			status.setMeasurementCount(eepromValue);
+			ESP_LOGI(TAG, "Updated measurementCount to %u",eepromValue);
 		} else {
-			if( res == sizeof(eepromValue) && eepromValue >= staticBootCount ){
-				eepromValue++;
-				status.setMeasurementCount(eepromValue);
-				ESP_LOGI(TAG, "Updated measurementCount to %u",eepromValue);
-			} else {
-				ESP_LOGI(TAG, "Read %B-value smaller then the current bootCount %u",res,staticBootCount);
-			}
+			ESP_LOGI(TAG, "Read %B-value smaller then the current bootCount %u",res,staticBootCount);
 		}
 	}
 	if( eeprom.LastError() == 0 ){
@@ -156,7 +218,7 @@ void Device::ReadRTCData()
  * Returns a raw value from the integrated voltage divider. 
  * Max voltage ~2200, min ~1730 
  **/
-uint16_t Device::RawBatteryVoltage() 
+void Device::GetBatteryLevel() 
 {
     //works only on the older moduled, chipid xxxx 5B1DA0D8 , not the v2.1
 
@@ -165,13 +227,13 @@ uint16_t Device::RawBatteryVoltage()
 	delay(100u);
     pinMode(Battery_Pin,OPEN_DRAIN);
     delay(100u);
-	auto batteryVoltage = analogRead(Battery_Pin);
+	status.batteryLevel = analogRead(Battery_Pin);
+	ESP_LOGD(TAG,"Read battery level %u",status.batteryLevel);
     //batteryVoltage = analogRead(Battery_Pin); 
     //Reference voltage is 3v3 so maximum reading is 3v3 = 4095 in range 0 to 4095
 	//Serial.println("Battery voltage reading: "+ String(batteryVoltage));
 	pinMode(Battery_Pin, OUTPUT);
-	digitalWrite(Battery_Pin, LOW);
-    return batteryVoltage;            
+	digitalWrite(Battery_Pin, LOW);      
 }
 
 
@@ -234,14 +296,23 @@ void Device::GotoDeepSleep()
 	//from https://github.com/Heltec-Aaron-Lee/WiFi_Kit_series/issues/6#issuecomment-518896314
 	pinMode(RST_LoRa,INPUT);  
 
-	uint64_t sleepTimeUs = sToMicroS(config.TimeBetween);
-	auto workTimeMs = status.millisFromStart();
-	ESP_LOGI(TAG,"Work time %dms",workTimeMs);
-	sleepTimeUs -=  milliToMicroS(workTimeMs); 
-	esp_sleep_enable_timer_wakeup(sleepTimeUs);
-	ESP_LOGI(TAG,"Going to deep sleep for %ds\n", sleepTimeUs/1000/1000);
-	Serial.end();
+/*
+	pinMode(KEY_BUILTIN, INPUT_PULLDOWN);
+	esp_sleep_enable_ext0_wakeup((gpio_num_t)KEY_BUILTIN, 1);
+	rtc_gpio_pullup_dis((gpio_num_t)KEY_BUILTIN);
+	rtc_gpio_pulldown_en((gpio_num_t)KEY_BUILTIN);
+*/
 	VextOFF();
+
+	uint64_t sleepTimeUs = sToMicroS(config.TimeBetween);
+	uint64_t workTimeMs = status.millisFromStart();
+	ESP_LOGI(TAG,"Work time %ums",workTimeMs);
+	sleepTimeUs -=  milliToMicroS(workTimeMs); 
+
+	esp_sleep_enable_timer_wakeup(sleepTimeUs);
+	ESP_LOGI(TAG,"Going to deep sleep for %us\n", sleepTimeUs/1000/1000);
+	Serial.flush();
+	Serial.end();
 	esp_deep_sleep_start();    
 }
 

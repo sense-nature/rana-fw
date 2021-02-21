@@ -42,11 +42,11 @@ bool Config::SaveConfig(){
 }
 
 
-void Config::ReadConfig() 
+void Config::ReadConfig(Status & status) 
 {
     ESP_LOGD(TAG,"Loading config from file, free heap: %gKB",esp_get_free_heap_size()/1024.0);
     StaticJsonDocument<JSON_DOC_BUFFER_SIZE> json;        
-    FSWrapper::readJsonDoc(CONFIG_FILE, json);
+    FSWrapper::readJsonDoc(CONFIG_FILE, json );
 
     if( json.size()  > 0 ){ 
         ESP_LOGD(TAG,"Loding config:");

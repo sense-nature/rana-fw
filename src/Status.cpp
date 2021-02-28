@@ -54,7 +54,7 @@ bool Status::enterConfigMode()
 const char * Status::getWUResonStr()
 {
     static char sDefaultReason[30];
-    sprintf(sDefaultReason, "NotDS: %d", wakeUpReson);
+    sprintf(sDefaultReason, "NotDSWU (%d)", wakeUpReson);
     switch(wakeUpReson)
     {
         case ESP_SLEEP_WAKEUP_EXT0 : return "DSWU:ext RTC_IO"; break;
@@ -72,13 +72,22 @@ unsigned long Status::millisFromStart()
     return millis() - startupTime;
 }
 
+String zeroLPad(String inp)
+{
+    if( inp.length() == 0 )
+        return String("00");
+    if( inp.length() == 1)
+        return "0"+inp;
+    return inp;
+}
+
 String RtcTSToString(const RtcDateTime & rts){
     return String(rts.Year())+"-"
-            +String(rts.Month())+"-"
-            +String(rts.Day())+" "
-            +String(rts.Hour())+":"
-            +String(rts.Minute())+":"
-            +String(rts.Second());
+            +zeroLPad(String(rts.Month()))+"-"
+            +zeroLPad(String(rts.Day()))+" "
+            +zeroLPad(String(rts.Hour()))+":"
+            +zeroLPad(String(rts.Minute()))+":"
+            +zeroLPad(String(rts.Second()))+"UTC";
 }
 
 bool Status::SaveToSD() 

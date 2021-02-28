@@ -68,7 +68,12 @@ public:
     void ReadConfig( Status & status );
     void ShowConfig();
 
+    uint32_t DEVADDRu32() const;
+
+
 };
+
+
 
  
 } // namespace Rana

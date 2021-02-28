@@ -17,7 +17,17 @@ Config::Config():NodeName("DefaultNodeName")
 {
 }
 
+uint32_t Config::DEVADDRu32() const
+{
+    uint32_t result = 0;
+    uint8_t rev[sizeof(result)]={0};
+    for(uint8_t i = 0; i<sizeof(result); i++)
+        rev[i]=this->DEVADDR[sizeof(result) - i - 1];
+    memcpy((void *)(&result), (void*)(&rev[0]), sizeof(result));
 
+        //memcpy((void *)((&result)+sizeof(result)-i), (this->DEVADDR)+i, 1);
+    return  result;
+}
 
 bool Config::SaveConfig(){
     StaticJsonDocument<JSON_DOC_BUFFER_SIZE> json;

@@ -32,9 +32,12 @@ static void begin();
 
     static String readFileToString(const char * path); 
 
+    static void EndDSCardOps();
+
 
 
 };
+
 
 
 } // namespace Rana

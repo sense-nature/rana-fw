@@ -14,6 +14,7 @@
 
 #include "Config.h"
 #include "Status.h"
+#include "LoRaWANConn.h"
 
 
 namespace Rana
@@ -32,10 +33,13 @@ protected:
 
 
     Config config;
+
+    LoRaWANConn lora;
+
+public:
     Status status;
 
 
-public:
     void StartDevice();
     void InitLCD();
 
@@ -60,7 +64,7 @@ public:
     void ReadConfigFromSD();
     void SaveConfigToSD();
 
-
+    void Loop();
     void GotoDeepSleep();
 };
 

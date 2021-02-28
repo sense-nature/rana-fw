@@ -76,19 +76,24 @@ void Device::StartDevice()
 	delay(1000);
 	GetInternalSensorValues();
 	GetBatteryLevel();
+	status.SaveToSD();  
+	FSWrapper::EndDSCardOps();
 
 	if(status.enterConfigMode() ){
 		startWebConfig();
 	} else {
 		sendMeasurementsOveLoRaWAN();
 	}
-
-
-
 	ESP_LOGD(TAG, "At setup start : free heap: %gKB",esp_get_free_heap_size()/1024.0);	
+}
 
+
+void Device::Loop() 
+{
+    lora.Loop();
 
 }
+
 
 
 void  Device::startWebConfig()
@@ -100,6 +105,10 @@ void  Device::startWebConfig()
 void  Device::sendMeasurementsOveLoRaWAN()
 {
 	ESP_LOGI("Sending the data over LoRaWAN");
+	lora.initLoRaWAN(status.measurementCount, config);
+	ESP_LOGD(TAG,"theDevice pointer: 0x%X",this);
+	lora.sendData(*this);
+
 
 }
 
@@ -299,7 +308,6 @@ void Device::GotoDeepSleep()
 	
 	//from https://github.com/Heltec-Aaron-Lee/WiFi_Kit_series/issues/6#issuecomment-518896314
 	pinMode(RST_LoRa,INPUT);
-	status.SaveToSD();  
 	SPI.end();
 
 
@@ -314,8 +322,14 @@ void Device::GotoDeepSleep()
 	uint64_t sleepTimeUs = sToMicroS(config.TimeBetween);
 	uint64_t workTimeMs = status.millisFromStart();
 	ESP_LOGI(TAG,"Work time %ums",workTimeMs);
-	sleepTimeUs -=  milliToMicroS(workTimeMs); 
+	uint64_t workTimeUs = milliToMicroS(workTimeMs);
 
+	if( workTimeUs > sleepTimeUs){
+		ESP_LOGI(TAG,"Work time longer than  sleep time, skipping %d cycles",workTimeUs/sleepTimeUs);
+		workTimeUs %= sleepTimeUs;
+	}
+
+	sleepTimeUs -=  workTimeUs; 
 	esp_sleep_enable_timer_wakeup(sleepTimeUs);
 	ESP_LOGI(TAG,"Going to deep sleep for %us\n", sleepTimeUs/1000/1000);
 	Serial.flush();

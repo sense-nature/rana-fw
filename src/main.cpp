@@ -11,17 +11,22 @@ Rana::Device theDevice;
 
 void setup() 
 {
+  ESP_LOGD(TAG,"theDevice pointer: 0x%X",&theDevice);
   theDevice.StartDevice();
  
- 
  // Rana::OWTemperatures::ReadValues(config);
-  ESP_LOGD(TAG,"At setup end: free heap: %gKB",esp_get_free_heap_size()/1024.0);
+  ESP_LOGD(TAG,"End of the setup: free heap: %gKB",esp_get_free_heap_size()/1024.0);
 }
 
 void loop() {
+
+  theDevice.Loop();
+//let the LMIC library handle the events
+
+/*
   Rana::Device::LedON();
   
-/*
+
 
   byte error, address;
   int nDevices;
@@ -59,10 +64,11 @@ void loop() {
   else
     Serial.println("done\n");
 
-*/
+
   delay(300);
   Rana::Device::LedOFF();
   theDevice.GotoDeepSleep();
+  */
 }
 
 

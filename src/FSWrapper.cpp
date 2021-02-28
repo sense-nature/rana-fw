@@ -99,6 +99,15 @@ fs::FS * FSWrapper::getSDFS(bool & success){
     return &SD;
 }
 
+
+void FSWrapper::EndDSCardOps() 
+{
+    SPI.end();
+    pinMode(EXT_SD_CS, OUTPUT);
+    digitalWrite(EXT_SD_CS, HIGH);   
+}
+
+
 String FSWrapper::readFileToString(const char * path) 
 {
     //return readFile(getFS(),path);

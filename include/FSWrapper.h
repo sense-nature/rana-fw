@@ -22,11 +22,13 @@ protected:
     //pin connected on the PCB to the SD CS
     static const uint8_t EXT_SD_CS = 23;
 
+public:
     static fs::FS & getFS();
     static fs::FS * getSDFS(bool & success);
     static fs::FS * getSPIFFS(bool & success);
-public:
-static void begin();
+
+
+    static void begin();
     static bool readJsonDoc(const char * path, JsonDocument &json);
     static size_t writeJsonDoc(const char * path, const JsonDocument & json, const char * mode);
 

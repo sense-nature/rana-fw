@@ -44,7 +44,9 @@ bool Status::enterConfigMode()
         return true;
     if( staticKeyPressChange )
         return true;
-        
+    if( wakeUpReson == ESP_SLEEP_WAKEUP_ALL )
+        return true;
+
     return false;    
 }
 
@@ -72,30 +74,12 @@ unsigned long Status::millisFromStart()
     return millis() - startupTime;
 }
 
-String zeroLPad(String inp)
-{
-    if( inp.length() == 0 )
-        return String("00");
-    if( inp.length() == 1)
-        return "0"+inp;
-    return inp;
-}
-
-String RtcTSToString(const RtcDateTime & rts){
-    return String(rts.Year())+"-"
-            +zeroLPad(String(rts.Month()))+"-"
-            +zeroLPad(String(rts.Day()))+" "
-            +zeroLPad(String(rts.Hour()))+":"
-            +zeroLPad(String(rts.Minute()))+":"
-            +zeroLPad(String(rts.Second()))+"UTC";
-}
-
 bool Status::SaveToSD() 
 {
     //StaticJsonDocument<JSON_DOC_BUFFER_SIZE> json;
     DynamicJsonDocument json(3000);
 
-    json["TS"] = RtcTSToString(utcRtcStartupTime);
+    json["TS"] = rtcDTToString(utcRtcStartupTime);
     json["bootCount"] = staticBootCount;
     json["measurementCount"] = measurementCount;
     json["batteryLevel"] = batteryLevel;

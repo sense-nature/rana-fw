@@ -3,6 +3,7 @@
 #include <WString.h>
 #include <DallasTemperature.h>   
 #include <array>
+#include <RtcDS3231.h>
 
 
 typedef std::array<uint8_t,8> DevAddrArray_t;
@@ -16,3 +17,8 @@ size_t hexStringToBin(const char * str, uint8_t * data, size_t size);;
 
 String devAddrToString(const DeviceAddress & da);
 String devAddrToString(const DevAddrArray_t & da);
+
+
+RtcDateTime rdtFromTimestamp(time_t ts);
+String zeroLPad(const String & inp);
+String rtcDTToString(const RtcDateTime & rts);

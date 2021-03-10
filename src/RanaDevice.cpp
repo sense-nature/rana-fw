@@ -1,6 +1,7 @@
 #include "RanaDevice.h"
 #include "OWTemperatures.h"
 #include "utils.h"
+#include "WebUI.h"
 
 #include <Arduino.h>
 #include <driver/adc.h>
@@ -81,10 +82,9 @@ void Device::StartDevice()
 
 	if(status.enterConfigMode() ){
 		startWebConfig();
-	} else {
-		sendMeasurementsOveLoRaWAN();
 	}
-	ESP_LOGD(TAG, "At setup start : free heap: %gKB",esp_get_free_heap_size()/1024.0);	
+	sendMeasurementsOveLoRaWAN();
+	ESP_LOGD(TAG, "At device setup end : free heap: %gKB",esp_get_free_heap_size()/1024.0);	
 }
 
 
@@ -99,7 +99,8 @@ void Device::Loop()
 void  Device::startWebConfig()
 {
 	ESP_LOGI("Starting web config");
-
+	CustomAPWebUI webUI;
+	webUI.startAPWebUI();	
 }
 
 void  Device::sendMeasurementsOveLoRaWAN()
@@ -134,9 +135,10 @@ void Device::GetInternalSensorValues()
 
 
 void Device::UpdateRTCData()
-{
-	//ESP_LOGI(TAG,"Build time %s", 
-	time_t bt_unix = PROJECT_BUILD_TIME;;
+{ 
+	//instead of build time, 2020-01-01 00:00:00 is used to save time on recompilation
+	//to use real build tome, add 	-D PROJECT_BUILD_TIME=$UNIX_TIME to the build_flags in platformio.ini
+	time_t bt_unix = 1609459200;  //PROJECT_BUILD_TIME;;
 	struct tm bt;
 	gmtime_r(&bt_unix, &bt);
 	const RtcDateTime buildTS = RtcDateTime(bt.tm_year+1900, bt.tm_mon+1, bt.tm_mday,bt.tm_hour, bt.tm_min, bt.tm_sec);	
@@ -200,7 +202,7 @@ void Device::UpdateEepromData()
 {
 	EepromAt24c32<TwoWire> eeprom(Wire);
 	eeprom.Begin();
-	const uint16_t valueAddress = 0;
+	const uint16_t valueAddress = 8;
 	ESP_LOGD(TAG,"Current boot count: %u, measurement count: %u", staticBootCount, status.measurementCount);
 	uint32_t eepromValue = 0;
 	auto res = eeprom.GetMemory(valueAddress, (uint8_t*)&eepromValue, sizeof(eepromValue));

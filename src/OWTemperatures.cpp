@@ -1,3 +1,4 @@
+#include <OneWire.h>
 #include "OWTemperatures.h"
 #include "RanaDevice.h"
 #include "utils.h"

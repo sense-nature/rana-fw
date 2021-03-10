@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 
+
 String binToHexString(const uint8_t *data, size_t size)
 {
     //const uint8_t zero = '0';
@@ -63,4 +64,33 @@ DevAddrArray_t toDevAddrArray(const DeviceAddress & da){
     DevAddrArray_t result;
     memcpy(result.data(), da, result.size());
     return result;
+}
+
+
+
+RtcDateTime rdtFromTimestamp(time_t ts)
+{
+	struct tm tms;
+	gmtime_r(&ts, &tms);
+	RtcDateTime rdt = RtcDateTime(tms.tm_year+1900, tms.tm_mon+1, tms.tm_mday,tms.tm_hour, tms.tm_min, tms.tm_sec);	
+    return rdt;
+}
+
+
+String zeroLPad(const String & inp)
+{
+    if( inp.length() == 0 )
+        return String("00");
+    if( inp.length() == 1)
+        return "0"+inp;
+    return String(inp);
+}
+
+String rtcDTToString(const RtcDateTime & rts){
+    return String(rts.Year())+"-"
+            +zeroLPad(String(rts.Month()))+"-"
+            +zeroLPad(String(rts.Day()))+" "
+            +zeroLPad(String(rts.Hour()))+":"
+            +zeroLPad(String(rts.Minute()))+":"
+            +zeroLPad(String(rts.Second()))+" UTC";
 }

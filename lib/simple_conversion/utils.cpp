@@ -11,6 +11,8 @@ String binToHexString(const uint8_t *data, size_t size)
     result.reserve(size * 2);
     for(int i = 0 ; i < size; i++){
         sprintf(temp.begin(), "%.2X",data[i]);
+        if(i>0)
+            result += ":";
         result += temp;
     }
     return result;
@@ -51,13 +53,17 @@ size_t hexStringToBin(const char * str, uint8_t * data, size_t size)
 
 String devAddrToString(const DeviceAddress & da)
 {
-    return String("0x")+binToHexString(da, sizeof(DeviceAddress));
+    constexpr size_t half = sizeof(DeviceAddress)/2;
+    return binToHexString(da, half) +" "+binToHexString(da+half,half);
 }
 
 
 String devAddrToString(const DevAddrArray_t & da)
 {
-    return String("0x")+binToHexString(da.data(), da.size());
+    constexpr size_t half = sizeof(da)/2;
+    return String("")+binToHexString(da.data(), half) +"-"+binToHexString(da.data()+half,half);
+
+    //return String("0x")+binToHexString(da.data(), da.size());
 }
 
 DevAddrArray_t toDevAddrArray(const DeviceAddress & da){

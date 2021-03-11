@@ -32,13 +32,13 @@ protected:
 
 
 
-    Config config;
+    
 
     LoRaWANConn lora;
 
 public:
     Status status;
-
+    Config config;
 
     void StartDevice();
     void InitLCD();

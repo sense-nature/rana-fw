@@ -14,6 +14,8 @@
 #include <DNSServer.h>
 #include <WebServer.h>
 
+#include "HtmlContent.h"
+
 
 
 
@@ -59,9 +61,11 @@ class CustomAPWebUI
 {
 protected:
 	WebServer webServer;
+	HtmlContent htmlContent;
+
 
 public:
-	CustomAPWebUI();
+	CustomAPWebUI(Device &dev);
 	virtual ~CustomAPWebUI();
 
 	bool startAPWebUI();

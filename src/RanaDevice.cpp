@@ -99,7 +99,7 @@ void Device::Loop()
 void  Device::startWebConfig()
 {
 	ESP_LOGI("Starting web config");
-	CustomAPWebUI webUI;
+	CustomAPWebUI webUI(*this);
 	webUI.startAPWebUI();	
 }
 

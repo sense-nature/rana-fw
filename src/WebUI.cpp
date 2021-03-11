@@ -7,6 +7,7 @@
 
 #include "WebUI.h"
 #include "FSWrapper.h"
+#include "RanaDevice.h"
 #include "utils.h"
 #include "rana_logging.h"
 
@@ -29,7 +30,7 @@
 using namespace Rana;
 
 
-CustomAPWebUI::CustomAPWebUI():webServer()
+CustomAPWebUI::CustomAPWebUI(Device &dev):webServer(), htmlContent(dev)
 {
 
 }
@@ -96,21 +97,23 @@ int CustomAPWebUI::selectChannelForAp() const {
 
 void CustomAPWebUI::setupWebserver()
 {
-	bool success = false;
-	fs::FS & sd = *(FSWrapper::getSDFS(success)); 
-	//webServer.on("/", [this](){ this->serverRoot(); });
-	//webServer.serveStatic("/",sd,"index.htm");
-	webServer.serveStatic("/",sd,"/index.htm");
-	webServer.serveStatic("/index",sd,"/index.htm");	
-	webServer.serveStatic("/config",sd,"/config.htm");
-	webServer.serveStatic("/config.htm",sd,"/config.htm");
-	webServer.serveStatic("/generate_204",sd,"config.htm");
-	webServer.serveStatic("/state",sd,"/state.htm");
-	webServer.serveStatic("/state.htm",sd,"/state.htm");
-
+	fs::FS & currFS = FSWrapper::getFS(); 
+	webServer.on("/", [this](){ this->serverRoot(); });
+	//webServer.serveStatic("/",currFS,"index.htm");
+	//webServer.serveStatic("/",currFS,"/index.htm");
+	/*
+	webServer.serveStatic("/index",currFS,"/index.htm");	
+	webServer.serveStatic("/config",currFS,"/config.htm");
+	webServer.serveStatic("/config.htm",currFS,"/config.htm");
+	webServer.serveStatic("/generate_204",currFS,"config.htm");
+	webServer.serveStatic("/state",currFS,"/state.htm");
+	webServer.serveStatic("/state.htm",currFS,"/state.htm");
+//*/
 	webServer.on("/time",[this](){this->onTime();});
-		//server.on(F("/config"), webserver_config);
-		//server.on(F("/wifi"), webserver_wifi);
+	
+	//webServer.on("/probes",[this](){this->onProbes();});
+	//webServer.on(("/wifi", webserver_wifi);
+
 		//server.on(F("/values"), webserver_values);
 	webServer.onNotFound([this](){this->defaultNotFound();});
 	webServer.begin(80);
@@ -123,31 +126,14 @@ void CustomAPWebUI::setupWebserver()
 
 void CustomAPWebUI::onTime() 
 {
-	const char * srcParamName = "source";
-	String source("");
-	String content;
+	String source = webServer.arg("source");
+	source.trim();
+	String timestamp = webServer.arg("timestamp");
+	timestamp.trim();
 
-	const char * tsParamName = "timestamp";
-	String timestamp;
-	//if(webServer.hasArg(srcParamName))
-	{
-	
-		for(int i = 0; i< webServer.args(); i++)
-		{
-			content+= webServer.argName(i);
-			content+= "=";
-			content+= webServer.arg(i);
-			content+="<br> \n\r";
-			if(webServer.argName(i).equalsIgnoreCase(srcParamName)){
-				source = webServer.arg(i);
-				source.trim();
-			}
-			if(webServer.argName(i).equalsIgnoreCase(tsParamName)){
-				timestamp = webServer.arg(i);
-				timestamp.trim();	
-			}
-		}
-	}
+	String content;
+	content.reserve(1024);
+
 	RtcDS3231<TwoWire> rtc(Wire);
 	rtc.Begin();
 	if( ! rtc.IsDateTimeValid() ){
@@ -163,7 +149,6 @@ void CustomAPWebUI::onTime()
 
 		}
 	}
-
 	if(!source.isEmpty()){
 		if(source.equalsIgnoreCase("browser") && !timestamp.isEmpty() ){
 			ESP_LOGD(TAG,"Received browser ts=%s", timestamp.c_str());
@@ -181,11 +166,21 @@ void CustomAPWebUI::onTime()
 
 void CustomAPWebUI::serverRoot()
 {
+	webServer.setContentLength(CONTENT_LENGTH_UNKNOWN);
+	webServer.send(200, "text/html", htmlContent.getPageTop());
+	webServer.sendContent(htmlContent.currentStateInnerBody());
+	webServer.sendContent(htmlContent.getPageFooter());
+	
+
+/*
     String json = "{";
     json += "\"free_heap\":" + String(ESP.getFreeHeap())+";";
     json += "}";
     webServer.send(200, "text/json", json);
     json = String();
+//*/
+
+
 }
 
 void CustomAPWebUI::defaultNotFound()
@@ -203,7 +198,6 @@ void CustomAPWebUI::runWebserver(const IPAddress & ip)
 	dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
 	dnsServer.start(53, "*", ip);		
 	ESP_LOGD(TAG, "DNS server started");					// 53 is port for DNS server
-
 
 	setupWebserver();
 

@@ -186,12 +186,13 @@ void CustomAPWebUI::serverRoot()
 void CustomAPWebUI::defaultNotFound()
 {
 	//webServer.sendHeader()
-	webServer.sendContent("def 404 - Page not found");
+	webServer.sendContent("Error 404 - Page not found");
 }
 
 void CustomAPWebUI::runWebserver(const IPAddress & ip)
 {
-	
+	ESP_LOGI(TAG,"Starting webserver on : %s",ip.toString().c_str());
+
 	DNSServer dnsServer;
 	// Ensure we don't poison the client DNS cache
 	dnsServer.setTTL(0);
@@ -214,9 +215,38 @@ void CustomAPWebUI::runWebserver(const IPAddress & ip)
 
 bool CustomAPWebUI::startAPWebUI()
 {
+	const char * defSP = "HappyFrog";
+	bool apActive = false;
+	const char * hostname ("sense-node");
+
 	auto ch = selectChannelForAp();
-	const char * hostname ("sense-node");  
-	WiFi.setHostname(hostname );
+	auto status =  WiFi.begin(defSP,defSP);
+	for(int i=0; i<10 && status != WL_CONNECTED ; i++){
+		ESP_LOGI(TAG, "Attempt #%d to connect to default WiFi, last state: %d",i,status);
+		status =  WiFi.begin(defSP,defSP);
+		delay(500);
+	}
+	if( status != WL_CONNECTED ){
+		ESP_LOGI(TAG, "Could not connect to the default WiFi, starting of AP");
+
+		WiFi.setHostname(hostname );
+		const IPAddress apIP(10, 12, 14, 1);
+		WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
+		auto ssid = getAPSsid();
+		
+		if( ! WiFi.softAP( ssid.c_str(),  getAPPassword(), ch ) )
+			ESP_LOGI(TAG,"Could not start WebUI AP");
+		else {
+			ESP_LOGI(TAG,"Starting AP wifi, ssid [%s], channel:%d ",ssid.c_str(), ch);
+			apActive = true;
+		}
+	} else {
+		ESP_LOGI(TAG,"Conncted to default WiFi ",defSP);
+	}
+
+	delay(2000); //let the soft AP start 
+	// In case we create a unique password at first start
+	//debug_outln_info(F("AP Password is: "), cfg::fs_pwd);
 	if (MDNS.begin( hostname )) {
 		MDNS.setInstanceName( "Config of the sensing node");
 		MDNS.addService("_http", "_tcp", 80);
@@ -224,22 +254,12 @@ bool CustomAPWebUI::startAPWebUI()
 		ESP_LOGI(TAG, "mDNS begun " );
 	}
 
-	const IPAddress apIP(10, 12, 14, 1);
-	WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
-	auto ssid = getAPSsid();
+	runWebserver( WiFi.localIP() );
 
-	if( ! WiFi.softAP( ssid.c_str(),  getAPPassword(), ch ) )
-		ESP_LOGI(TAG,"Could not start WebUI AP");
-	else 
-		ESP_LOGI(TAG,"Starting AP wifi, ssid [%s], channel:%d ",ssid.c_str(), ch);
-	delay(2000); //let the soft AP start 
-	// In case we create a unique password at first start
-	//debug_outln_info(F("AP Password is: "), cfg::fs_pwd);
-
-	runWebserver( apIP );
-	
-	WiFi.softAPdisconnect(true);
-	ESP_LOGI(TAG,"WiFi AP finished");
+	if( apActive ){
+		WiFi.softAPdisconnect(true);
+		ESP_LOGI(TAG,"WiFi AP finished");
+	}
 
 	return true;
 }

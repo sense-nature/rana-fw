@@ -188,10 +188,12 @@ void Config::setProbes(JsonDocument & root)
 void Config::setProbeAddess(uint8_t idx, const char * strHexAddress) 
 {
     DevAddrArray_t tmp;
-    auto read = setBinaryFromHexStr(strHexAddress, tmp.data(), tmp.max_size(), Probes_name);
+    String stripped = stripNonHexChars(strHexAddress);
+
+    auto read = setBinaryFromHexStr(stripped.c_str(), tmp.data(), tmp.max_size(), Probes_name);
     if( read ){
-        Probes[idx] = tmp;
-        ESP_LOGD(TAG, "Probe[%d] set to 0x%s",idx,strHexAddress );
+        this->Probes[idx] = tmp;
+        ESP_LOGD(TAG, "Probe[%d] set to 0x%s (%s)",idx,devAddrToString(tmp).c_str(), stripped.c_str() );
     } else {
         ESP_LOGE(TAG, "Invalid value [%s] for ProbeDevice address, not set",strHexAddress);
     }

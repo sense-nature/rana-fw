@@ -107,6 +107,13 @@ void test_hexStringToBin(void)
 }
 
 
+void test_strippingNonHex(void)
+{
+    TEST_ASSERT_EQUAL(stripNonHexChars("000FFf"), String("000FFf"));
+    TEST_ASSERT_EQUAL(stripNonHexChars("12:34-5"), String("12345"));
+
+}
+
 void setup() {
     // NOTE!!! Wait for >2 secs
     // if board doesn't support software reset via Serial.DTR/RTS
@@ -122,6 +129,7 @@ void setup() {
     RUN_TEST(test_hexStringTo_0FBin);
     RUN_TEST(test_hexStringTo_F0Bin);
     RUN_TEST(test_hexStringToBin);
+    RUN_TEST(test_strippingNonHex);
 }
 
 void loop() {

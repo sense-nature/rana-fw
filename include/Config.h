@@ -32,7 +32,6 @@ protected:
     void setNwkskey(const char * strHexNwkskey);
     
     void setProbes(JsonDocument & root);
-    void setProbeAddess(uint8_t idx, const char * strHexAddress);
 
     bool setBinaryFromHexStr(const char * str, uint8_t * data, uint8_t size, const char * name );
 public:
@@ -44,6 +43,9 @@ public:
 
     uint8_t SF = 9;
     const char * SF_name = "SF";
+
+
+    void setProbeAddess(uint8_t idx, const char * strHexAddress);
 
 /**
  * Time between measurements, in seconds

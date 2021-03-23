@@ -59,7 +59,7 @@ public:
     void sendMeasurementsOveLoRaWAN();
 
     static SSD1306Wire * GetDisplay();
-    static std::vector<std::pair<DevAddrArray_t,float>> ReadDS18B20Temperatures();
+    void ReadDS18B20Temperatures();
 
     void ReadConfigFromSD();
     void SaveConfigToSD();

@@ -97,9 +97,12 @@ std::vector<std::pair<DevAddrArray_t,float>>  OWTemperatures::ReadBus(uint8_t pi
         DeviceAddress addr = {0};
         ESP_LOGD(TAG, "Detected %d DS18B20 sensor(s) on the bus",n);
         for(uint8_t i=0; i < n ; i++){
-            ds18b20.getAddress(addr, i);
-            auto t = ds18b20.getTempC(addr);
-            temps.push_back({toDevAddrArray(addr) ,t});
+            if(ds18b20.getAddress(addr, i)){
+                auto t = ds18b20.getTempC(addr);
+                temps.push_back({toDevAddrArray(addr) ,t});
+            } else {
+                ESP_LOGE(TAG,"One wire address not found during iterative requests");
+            }
         }
     }
     std::sort(temps.begin(), temps.end(), compareAddrValue);

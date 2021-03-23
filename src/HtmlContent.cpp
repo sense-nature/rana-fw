@@ -92,6 +92,21 @@ String getTR(const String &firstCell, const String &secondCell)
 }
 
 
+String HtmlContent::unknownProbesDropdown()
+{
+    String  out = R"(<select name="address">\n)";
+    for(auto it = theDevice.status.unknownProbeTemperatures.begin(); it!=theDevice.status.unknownProbeTemperatures.end(); it++){
+        String addr = devAddrToString(it->first);
+        String option = R"(<option value="{1}">{1}</option>
+)";
+        option.replace("{1}", addr);
+        out += option;
+    }
+    out+=R"(</select>)";
+    return out;
+
+}
+
 String HtmlContent::knownProbesTemperatures()
 {
     String table;
@@ -114,7 +129,18 @@ String HtmlContent::knownProbesTemperatures()
         if( i2 != theDevice.status.knownProbeTemperatures.end() ){
             s.replace("{3}",String(i2->second.second)+"&deg;C");
         } else {
-            s.replace("{3}","--");
+            if(theDevice.status.unknownProbeTemperatures.empty()){
+                s.replace("{3}","--");
+            } else {
+                String assignForm = R"(--  <form action="assign">
+    <input type="hidden" name="T" value="{1}">
+    {S}
+    <input type="submit" value="Assign">
+</form>)";
+                assignForm.replace("{1}",String(it->first));
+                assignForm.replace("{S}", unknownProbesDropdown());
+                s.replace("{3}",assignForm);
+            }
         }
         table += s;
     }

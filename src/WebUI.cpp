@@ -30,7 +30,7 @@
 using namespace Rana;
 
 
-CustomAPWebUI::CustomAPWebUI(Device &dev):webServer(), htmlContent(dev)
+CustomAPWebUI::CustomAPWebUI(Device &dev):theDevice(dev), webServer(), htmlContent(dev)
 {
 
 }
@@ -101,16 +101,16 @@ void CustomAPWebUI::setupWebserver()
 	webServer.on("/", [this](){ this->serverRoot(); });
 	//webServer.serveStatic("/",currFS,"index.htm");
 	//webServer.serveStatic("/",currFS,"/index.htm");
-	/*
-	webServer.serveStatic("/index",currFS,"/index.htm");	
+	
+	//webServer.serveStatic("/index",currFS,"/index.htm");	
 	webServer.serveStatic("/config",currFS,"/config.htm");
 	webServer.serveStatic("/config.htm",currFS,"/config.htm");
-	webServer.serveStatic("/generate_204",currFS,"config.htm");
-	webServer.serveStatic("/state",currFS,"/state.htm");
-	webServer.serveStatic("/state.htm",currFS,"/state.htm");
-//*/
+	//webServer.serveStatic("/generate_204",currFS,"config.htm");
+	//webServer.serveStatic("/state",currFS,"/state.htm");
+	//webServer.serveStatic("/state.htm",currFS,"/state.htm");
+
 	webServer.on("/time",[this](){this->onTime();});
-	
+	webServer.on("/assign",[this](){this->onAssign();});
 	//webServer.on("/probes",[this](){this->onProbes();});
 	//webServer.on(("/wifi", webserver_wifi);
 
@@ -122,6 +122,24 @@ void CustomAPWebUI::setupWebserver()
 
 
 
+void CustomAPWebUI::onAssign()
+{
+
+	String content =  webServer.arg("address")+" to be assigned to T#"+webServer.arg("T");
+
+	theDevice.config.setProbeAddess( (uint8_t)atoi(webServer.arg("T").c_str()), webServer.arg("address").c_str());   
+
+	theDevice.config.SaveConfig();
+	theDevice.config.ShowConfig();
+	content+=R"( \n<br><a href="/">go to status</a>)";
+
+	webServer.setContentLength(CONTENT_LENGTH_UNKNOWN);
+	webServer.send(200, "text/html", htmlContent.getPageTop());
+	webServer.sendContent(content);
+	webServer.sendContent(htmlContent.getPageFooter());
+	
+
+}
 
 
 void CustomAPWebUI::onTime() 
@@ -166,6 +184,7 @@ void CustomAPWebUI::onTime()
 
 void CustomAPWebUI::serverRoot()
 {
+	theDevice.ReadDS18B20Temperatures();
 	webServer.setContentLength(CONTENT_LENGTH_UNKNOWN);
 	webServer.send(200, "text/html", htmlContent.getPageTop());
 	webServer.sendContent(htmlContent.currentStateInnerBody());

@@ -32,8 +32,8 @@ uint8_t hexValue(char c){
         return 10 + (c - A );
     if( a <= c && c <= f )
         return 10 + (c - a );
-    ESP_LOGE(TAG, "Invalid hex character %d",c);
-    return 0;
+    //ESP_LOGE(TAG, "Invalid hex character %d",c);
+    return 0xFF;
 }
 
 size_t hexStringToBin(const char * str, uint8_t * data, size_t size)
@@ -48,6 +48,23 @@ size_t hexStringToBin(const char * str, uint8_t * data, size_t size)
         result ++;
     }
     return result;
+}
+
+
+String stripNonHexChars(const char * str)
+{
+    String out = "";
+    for(int i=0; i<strlen(str); i++){
+        if( hexValue(str[i]) != 0xFF )
+            out += str[i]; 
+    }
+    return out;
+}
+
+DevAddrArray_t stringToDevAddrT(const char * str)
+{
+
+
 }
 
 

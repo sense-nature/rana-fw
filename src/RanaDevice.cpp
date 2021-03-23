@@ -69,7 +69,7 @@ void Device::StartDevice()
 	Rana::Device::GetDisplay();
 	UpdateEepromData();
 	UpdateRTCData();
-	OWTemperatures::ReadValues(OneWire_Pin, config ,status);
+	ReadDS18B20Temperatures();
 	GetDisplay()->flipScreenVertically();
 	GetDisplay()->drawString(0, 0, "# " + String(status.getBootCount())+" | "+String(status.measurementCount)); 
 	GetDisplay()->drawString(0, 33," probes: " + String(status.unknownProbeTemperatures.size() +status.knownProbeTemperatures.size()));
@@ -86,6 +86,7 @@ void Device::StartDevice()
 	sendMeasurementsOveLoRaWAN();
 	ESP_LOGD(TAG, "At device setup end : free heap: %gKB",esp_get_free_heap_size()/1024.0);	
 }
+
 
 
 void Device::Loop() 
@@ -132,7 +133,10 @@ void Device::GetInternalSensorValues()
 	status.intPressure = roundf(bme.readPressure() / 100.0F /* hPa */);
 }
 
-
+void Device::ReadDS18B20Temperatures()
+{
+	OWTemperatures::ReadValues(OneWire_Pin, config ,status);
+}
 
 void Device::UpdateRTCData()
 { 

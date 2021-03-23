@@ -60,6 +60,7 @@ struct wifiInfo_t {
 class CustomAPWebUI
 {
 protected:
+	Device &theDevice; 
 	WebServer webServer;
 	HtmlContent htmlContent;
 
@@ -73,7 +74,7 @@ public:
 	void defaultNotFound();
 
 	void onTime();
-
+	void onAssign();
 protected:
 	virtual String getAPSsid() const;
 	virtual const char * getAPPassword() const;

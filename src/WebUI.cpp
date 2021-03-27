@@ -97,14 +97,17 @@ int CustomAPWebUI::selectChannelForAp() const {
 
 void CustomAPWebUI::setupWebserver()
 {
-	fs::FS & currFS = FSWrapper::getFS(); 
+	//fs::FS & currFS = FSWrapper::getFS(); 
 	webServer.on("/", [this](){ this->serverRoot(); });
+	webServer.on("/state", [this](){ this->serverRoot(); });
+	
 	//webServer.serveStatic("/",currFS,"index.htm");
 	//webServer.serveStatic("/",currFS,"/index.htm");
 	
 	//webServer.serveStatic("/index",currFS,"/index.htm");	
-	webServer.serveStatic("/config",currFS,"/config.htm");
-	webServer.serveStatic("/config.htm",currFS,"/config.htm");
+	webServer.on("/config",[this](){this->onConfig();});
+	webServer.on("/save_config",[this](){this->onSaveConfig();});
+
 	//webServer.serveStatic("/generate_204",currFS,"config.htm");
 	//webServer.serveStatic("/state",currFS,"/state.htm");
 	//webServer.serveStatic("/state.htm",currFS,"/state.htm");
@@ -124,22 +127,53 @@ void CustomAPWebUI::setupWebserver()
 
 void CustomAPWebUI::onAssign()
 {
-
-	String content =  webServer.arg("address")+" to be assigned to T#"+webServer.arg("T");
-
+	String innerHtmlBody =  webServer.arg("address")+" to be assigned to T#"+webServer.arg("T");
 	theDevice.config.setProbeAddess( (uint8_t)atoi(webServer.arg("T").c_str()), webServer.arg("address").c_str());   
 
 	theDevice.config.SaveConfig();
 	theDevice.config.ShowConfig();
-	content+=R"( \n<br><a href="/">go to status</a>)";
+	innerHtmlBody+=R"( \n<br><a href="/">go to status</a>)";
+	serve(innerHtmlBody);
+}
 
-	webServer.setContentLength(CONTENT_LENGTH_UNKNOWN);
-	webServer.send(200, "text/html", htmlContent.getPageTop());
-	webServer.sendContent(content);
-	webServer.sendContent(htmlContent.getPageFooter());
+void CustomAPWebUI::onConfig()
+{
+	serve(htmlContent.configInnerBody());
+}
+void CustomAPWebUI::onSaveConfig()
+{
+	String text("OnSaveConfig<br>\n");
+	text.reserve(2000);
+	for(int i=0; i< webServer.args(); i++){
+	
+		text+=webServer.argName(i);
+		text+="=";
+		text+=webServer.arg(i);
+		text+="<br>\n";
+	}
+	String interval = webServer.arg("interval");
+	interval.trim();
+	int iInt = atoi(interval.c_str());
+	if( iInt > 20 )
+		theDevice.config.TimeBetween = iInt;
+	else
+		text +="Interval < 20s, not changed <br>";
+
+	theDevice.config.setDevaddr(webServer.arg(theDevice.config.DEVADDR_name).c_str());
+	theDevice.config.setNwkskey(webServer.arg(theDevice.config.NWKSKEY_name).c_str());
+	theDevice.config.setAppskey(webServer.arg(theDevice.config.APPSKEY_name).c_str());
+	theDevice.config.setSF((uint8_t)atoi(webServer.arg(theDevice.config.SF_name).c_str()));
+	int iNumProbes = atoi(webServer.arg("number_of_probes").c_str());
+	int iLastProbeIndex = theDevice.config.lastProbeIndex(); 
 	
 
+	theDevice.config.SaveConfig();
+	theDevice.config.ShowConfig();
+
+	serve(text);
 }
+
+
 
 
 void CustomAPWebUI::onTime() 
@@ -185,11 +219,7 @@ void CustomAPWebUI::onTime()
 void CustomAPWebUI::serverRoot()
 {
 	theDevice.ReadDS18B20Temperatures();
-	webServer.setContentLength(CONTENT_LENGTH_UNKNOWN);
-	webServer.send(200, "text/html", htmlContent.getPageTop());
-	webServer.sendContent(htmlContent.currentStateInnerBody());
-	webServer.sendContent(htmlContent.getPageFooter());
-	
+	serve(htmlContent.currentStateInnerBody());
 
 /*
     String json = "{";
@@ -198,8 +228,15 @@ void CustomAPWebUI::serverRoot()
     webServer.send(200, "text/json", json);
     json = String();
 //*/
+}
 
-
+void CustomAPWebUI::serve(const String & innerHtmlBody)
+{
+	webServer.setContentLength(CONTENT_LENGTH_UNKNOWN);
+	webServer.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+	webServer.send(200, "text/html", htmlContent.getPageTop());
+	webServer.sendContent(innerHtmlBody);
+	webServer.sendContent(htmlContent.getPageFooter());
 }
 
 void CustomAPWebUI::defaultNotFound()

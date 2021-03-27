@@ -75,6 +75,8 @@ public:
 
 	void onTime();
 	void onAssign();
+	void onConfig();
+	void onSaveConfig();	
 protected:
 	virtual String getAPSsid() const;
 	virtual const char * getAPPassword() const;
@@ -84,7 +86,7 @@ protected:
 	virtual void setupWebserver();
 	virtual void runWebserver(const IPAddress & ip);
 
-
+	void serve(const String & content);
 
 };
 

@@ -117,7 +117,8 @@ void Config::setNodeName(const char * newName)
 
 void Config::setDevaddr(const char * strDevname) 
 {
-    auto conv = hexStringToBin(strDevname, DEVADDR, sizeof(DEVADDR));
+    String stripped = stripNonHexChars(strDevname);
+    auto conv = hexStringToBin(stripped.c_str(), DEVADDR, sizeof(DEVADDR));
     if(conv != sizeof(DEVADDR))
         ESP_LOGE(TAG,"Partial (%d/%d) DEVADDR definion in the config", conv,sizeof(DEVADDR));
     else
@@ -147,8 +148,26 @@ void Config::setAppskey(const char * strHexAppskey)
    setBinaryFromHexStr(strHexAppskey, APPSKEY, (uint8_t)sizeof(APPSKEY), APPSKEY_name);
 }
 
+String Config::getAppsKeyStr() 
+{
+    return binToHexString(APPSKEY,(uint8_t)sizeof(APPSKEY));    
+}
+
+String Config::getNwksKey() 
+{
+    return binToHexString(NWKSKEY,(uint8_t)sizeof(NWKSKEY));    
+}
+
+String Config::getDevAddr() 
+{
+    return binToHexString(DEVADDR, (uint8_t)sizeof(DEVADDR));    
+}
+
+
+
 bool Config::setBinaryFromHexStr(const char * str, uint8_t * data, uint8_t size, const char * name ){
-    auto len = hexStringToBin(str, data, size);
+    String stripped = stripNonHexChars(str);
+    auto len = hexStringToBin(stripped.c_str(), data, size);
     if( len > 0 ){
         ESP_LOGD(TAG,"%s set to %s",name, str);
         return true;
@@ -199,6 +218,16 @@ void Config::setProbeAddess(uint8_t idx, const char * strHexAddress)
     }
 }
 
+
+uint8_t Config::lastProbeIndex()
+{
+    uint8_t n=0;
+    for(auto it = Probes.begin(); it != Probes.end(); it++ ){
+        if( it->first > n )
+            n=it->first;
+    }
+    return n;
+}
 
 
 void Config::ShowConfig() 

@@ -18,9 +18,12 @@ namespace Rana
         const char * getPageFooter() const;
 
         String currentStateInnerBody();
-
+        String configInnerBody();
+        
+    protected:
         String knownProbesTemperatures();
         String unknownProbesDropdown();
+        int lastProbeIndex();
 
 
     };

@@ -167,17 +167,77 @@ String HtmlContent::currentStateInnerBody()
             </tr>	
 	    </thead>
 	    <tbody>)";
-
     stateTable += getTR("Box name", theDevice.status.nodeName);
+    stateTable += getTR("Measure interval", 
+        String(theDevice.config.TimeBetween)
+        +" s  ("
+        + String(theDevice.config.TimeBetween / 60)
+        +" min "
+        +String(theDevice.config.TimeBetween % 60)
+        +" s )" );
     stateTable += getTR("Wakeup reason", theDevice.status.getWUResonStr());
     stateTable += getTR("#boot", String(theDevice.status.getBootCount()));
     stateTable += getTR("#measurement", String(theDevice.status.measurementCount));
-
     stateTable += getTR("Temperatures", knownProbesTemperatures());
-    
-
     stateTable+=R"(</tbody>
 	</table>
 </div>)";
     return stateTable;
+}
+
+String HtmlContent::configInnerBody()
+{
+    String body;
+    body.reserve(2024);
+
+    body+=R"(<div>Configuration
+    <form action="save_config">
+	<table class="v">	
+	    <tbody>)";
+    body += getTR("DEVADDR"
+        , R"(<input type="text" name=")"
+        +String(theDevice.config.DEVADDR_name)
+        +R"(" minlength="4" maxlength="8" style="width: 100px;" placeholder="LoRaWAN Device Address" value=")"
+        +theDevice.config.getDevAddr()
+        +R"(" >)");
+    body += getTR("Network Session Key"
+        , R"(<input type="text" name=")"
+        +String(theDevice.config.NWKSKEY_name)
+        +R"(" minlength="32" maxlength="48" style="width: 280px;" placeholder="LoRaWAN NwksKeyF" value=")"
+        +theDevice.config.getNwksKey()
+        +R"(" >)");
+    body += getTR("Application Session Key"
+        , R"(<input type="text" name=")"
+        +String(theDevice.config.APPSKEY_name)
+        +R"(" minlength="32" maxlength="48" style="width: 280px;" placeholder="LoRaWAN AppsKey" value=")"
+        +theDevice.config.getAppsKeyStr()
+        +R"(" >)");
+    body += getTR("LoRaWAN Spreading Factor"
+        , R"(<input type="number" name=")"
+        +String(theDevice.config.SF_name)
+        +R"(" min="7" max="12" style="width: 100px;" placeholder="LoRaWAN SF" value=")"
+        +String(theDevice.config.SF)
+        +R"(" >)");
+    body += getTR("Measurement interval [s]"
+        , R"(<input type="number" name="interval" min="10" style="width: 100px;" placeholder="Measuring interval [sec]" value=")"
+        +String(theDevice.config.TimeBetween)
+        +R"(" > seconds)");
+    body += getTR("Number of probes"
+        , R"(<input type="number" name="number_of_probes" min="0" style="width: 100px;" placeholder="Number of assigned probes" value=")"
+        +String(theDevice.config.lastProbeIndex() +1)
+        +R"(" >)");
+
+
+//    body += getTR("Wakeup reason", theDevice.status.getWUResonStr());
+//    body += getTR("#boot", String(theDevice.status.getBootCount()));
+//    body += getTR("Temperatures", knownProbesTemperatures());
+    body+=R"(</tbody>
+	</table>
+    <br>
+    <input type="submit" value="Save config"/>
+    </form>
+</div>)";
+    return body;
+
+
 }

@@ -23,14 +23,7 @@ protected:
     static const char * CONFIG_FILE;
     static const size_t JSON_DOC_BUFFER_SIZE = 2000;
     static const size_t NODE_NAME_MAX_LENGTH = 32;
-
-    void setNodeName(const char * newName);
-    void setDevaddr(const char * strDevname);
-    void setSF(uint8_t newVal);
-    void setTimeBetween(uint32_t newVal);
-    void setAppskey(const char * strHexAppskey);
-    void setNwkskey(const char * strHexNwkskey);
-    
+   
     void setProbes(JsonDocument & root);
 
     bool setBinaryFromHexStr(const char * str, uint8_t * data, uint8_t size, const char * name );
@@ -45,8 +38,20 @@ public:
     const char * SF_name = "SF";
 
 
-    void setProbeAddess(uint8_t idx, const char * strHexAddress);
+    void setNodeName(const char * newName);
+    void setDevaddr(const char * strDevname);
+    void setSF(uint8_t newVal);
+    void setTimeBetween(uint32_t newVal);
+    void setAppskey(const char * strHexAppskey);
+    void setNwkskey(const char * strHexNwkskey);
+ 
 
+    String getDevAddr();
+    String getAppsKeyStr();
+    String getNwksKey();
+ 
+    void setProbeAddess(uint8_t idx, const char * strHexAddress);
+    uint8_t lastProbeIndex();
 /**
  * Time between measurements, in seconds
  */
@@ -74,6 +79,7 @@ public:
 
 
 };
+
 
 
 

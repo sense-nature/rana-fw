@@ -167,7 +167,10 @@ String HtmlContent::currentStateInnerBody()
             </tr>	
 	    </thead>
 	    <tbody>)";
-    stateTable += getTR("Box name", theDevice.status.nodeName);
+    stateTable += getTR("MAC address", theDevice.GetHWString());
+    stateTable += getTR("Box name", theDevice.config.NodeName);
+    int battPercent = (int)(((double)theDevice.status.batteryLevel - 1700.0) / 5.2);
+    stateTable += getTR("Battery", String(theDevice.status.batteryLevel) +" ~ "+String(battPercent)+"%");
     stateTable += getTR("Measure interval", 
         String(theDevice.config.TimeBetween)
         +" s  ("
@@ -179,6 +182,7 @@ String HtmlContent::currentStateInnerBody()
     stateTable += getTR("#boot", String(theDevice.status.getBootCount()));
     stateTable += getTR("#measurement", String(theDevice.status.measurementCount));
     stateTable += getTR("Temperatures", knownProbesTemperatures());
+    stateTable += getTR("RAM", String());
     stateTable+=R"(</tbody>
 	</table>
 </div>)";
@@ -194,6 +198,13 @@ String HtmlContent::configInnerBody()
     <form action="save_config">
 	<table class="v">	
 	    <tbody>)";
+    body += getTR("Node name"
+        , R"(<input type="text" name=")"
+        +String(theDevice.config.NodeName_name)
+        +R"(" minlength="3" maxlength="32" style="width: 200px;" placeholder="Node name" value=")"
+        +theDevice.config.NodeName
+        +R"(" >)");
+
     body += getTR("DEVADDR"
         , R"(<input type="text" name=")"
         +String(theDevice.config.DEVADDR_name)

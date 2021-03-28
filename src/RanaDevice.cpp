@@ -188,10 +188,9 @@ void Device::ReadAndUpdateEepromData()
 {
 	EepromAt24c32<TwoWire> eeprom(Wire);
 	eeprom.Begin();
-	const uint16_t valueAddress = 8;
 	ESP_LOGD(TAG,"Current boot count: %u, measurement count: %u", staticBootCount, status.measurementCount);
 	uint32_t eepromValue = 0;
-	auto res = eeprom.GetMemory(valueAddress, (uint8_t*)&eepromValue, sizeof(eepromValue));
+	auto res = eeprom.GetMemory(nextMeasValueAddress, (uint8_t*)&eepromValue, sizeof(eepromValue));
 	ESP_LOGI(TAG,"AT24c32 EEPROM: Read %uB, value=%u  ", res, eepromValue);
 	if( eeprom.LastError() != 0 ){
 		ESP_LOGE(TAG,"Reading form EEPROM error=%d",eeprom.LastError());
@@ -205,13 +204,29 @@ void Device::ReadAndUpdateEepromData()
 		}
 	}
 	if( eeprom.LastError() == 0 ){
-		eeprom.SetMemory(valueAddress, (uint8_t*)&status.measurementCount, sizeof(status.measurementCount));
+		eeprom.SetMemory(nextMeasValueAddress, (uint8_t*)&status.measurementCount, sizeof(status.measurementCount));
 		if( eeprom.LastError() == 0 )
 			ESP_LOGI(TAG,"Written %u current measurement number to the EEPROM",status.measurementCount);
 		else			
 			ESP_LOGE(TAG,"Error %d on writng to the EEPROM", eeprom.LastError());
 	} else {
 		ESP_LOGE(TAG,"No writing to the EEPROM because of earlier error.");
+	}
+}
+bool Device::SetNextMeasurement(uint32_t nextVal)
+{
+	nextVal--;
+	EepromAt24c32<TwoWire> eeprom(Wire);
+	eeprom.Begin();
+	eeprom.SetMemory(nextMeasValueAddress, (uint8_t*)&nextVal, sizeof(nextVal));
+	if( eeprom.LastError() == 0 ){
+		status.measurementCount = nextVal;
+		ESP_LOGI(TAG,"Written %u to EEPROM. Next measurement number: %u",nextVal, nextVal+1);
+		return true;
+	} else { 			
+		staticBootCount = nextVal;
+		ESP_LOGE(TAG,"Error %d on writng to the EEPROM", eeprom.LastError());
+		return false;
 	}
 }
 

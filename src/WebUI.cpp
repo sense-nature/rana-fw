@@ -114,6 +114,7 @@ void CustomAPWebUI::setupWebserver()
 
 	webServer.on("/time",[this](){this->onTime();});
 	webServer.on("/assign",[this](){this->onAssign();});
+	webServer.on("/next_measurement",[this](){this->onNextMeasurement();});
 	//webServer.on("/probes",[this](){this->onProbes();});
 	//webServer.on(("/wifi", webserver_wifi);
 
@@ -247,6 +248,24 @@ void CustomAPWebUI::onTime()
 	} 
 
 	serve(content);
+}
+
+void CustomAPWebUI::onNextMeasurement() 
+{
+	String innerHtmlBody;
+	String nextValStr = webServer.arg("next_measurement");
+	uint32_t nextVal = (uint32_t)atoi(nextValStr.c_str());
+	if( ! nextValStr.equals( String(nextVal, 10 ) )  )  {
+		innerHtmlBody =  String("Invalid next measurment value given: [") + nextValStr + "]";  		
+	} else {
+		bool res = theDevice.SetNextMeasurement(nextVal);
+		if( res )
+			innerHtmlBody = String("Next measuremt # [") + String(nextVal) + "] saved to EEPROM";
+		else  				
+			innerHtmlBody = String("Next measuremt # could not be saved, bootcount set to [") + String(nextVal) + "]";
+
+	}
+	serve(innerHtmlBody);
 }
 
 

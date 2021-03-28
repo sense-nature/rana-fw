@@ -76,7 +76,8 @@ public:
 	void onTime();
 	void onAssign();
 	void onConfig();
-	void onSaveConfig();	
+	void onSaveConfig();
+	void onNextMeasurement();	
 protected:
 	virtual String getAPSsid() const;
 	virtual const char * getAPPassword() const;
@@ -91,6 +92,7 @@ protected:
 	bool boolParam(const char * parmName);
 
 };
+
 
 
 

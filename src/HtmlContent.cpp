@@ -165,7 +165,7 @@ String HtmlContent::knownProbesTemperatures()
 String HtmlContent::formSetTimeFromBrowser() const
 {
     String sForm = R"(
-    	<form name="time_from_browser" action="time" method="get" onsubmit="{timestamp.value = Math.round(Date.now()/1000.0); return true;}" >
+    	<form name="time_from_browser" action="time" onsubmit="{timestamp.value = Math.round(Date.now()/1000.0); return true;}" >
 				<input type="hidden" name="timestamp" value="" />
 				<button type="submit" name="source" value="browser"  >Time from the web browser</button>				
 				<button type="submit" name="source" value=""  >Check current time</button>				
@@ -174,6 +174,18 @@ String HtmlContent::formSetTimeFromBrowser() const
     return sForm;       
 }
 
+String HtmlContent::formSetNextMeasurment() const
+{
+    String sForm = R"(
+    	<form name="next_measurement" action="next_measurement" >
+				<input type="number" name="next" min="1" style="width: 100px;"" value=")"
+        +String(theDevice.status.measurementCount)
+        +R"(" > 
+                <input type="submit" value="Set value">
+			</form>   
+)";
+    return sForm;       
+}
 
 String HtmlContent::configDivRTC()
 {
@@ -184,11 +196,11 @@ String HtmlContent::configDivRTC()
     <div class="conf_div">
         <div class="conf_title">External RTC + Time</div>
     <br>
-   <table class="v">
+   <table class="v vt">
         <tbody>
 )";
     divStr+= getTR("Local time", theDevice.status.rtcTimeStr() + formSetTimeFromBrowser());        
-
+    divStr+= getTR("Next measurement", formSetNextMeasurment() );
     divStr+=R"( 
         </tbody>
     </table>
@@ -196,6 +208,8 @@ String HtmlContent::configDivRTC()
     )";
     return divStr;
 }
+
+
 
 
 String HtmlContent::currentStateInnerBody()
@@ -217,6 +231,7 @@ String HtmlContent::currentStateInnerBody()
     int battPercent = (int)(((double)theDevice.status.batteryLevel - 1700.0) / 5.2);
     stateTable += getTR("Battery", String(theDevice.status.batteryLevel) +" &nbsp;(~"+String(battPercent)+"%)");
     stateTable += getTR("Local time", theDevice.status.rtcTimeStr());
+    stateTable += getTR("Box temperature", String(theDevice.status.intTemperature)+"&deg;C");
     stateTable += getTR("Measure interval", 
         String(theDevice.config.TimeBetween)
         +" s  ("
@@ -245,7 +260,7 @@ String HtmlContent::configDivGeneral()
     <div class="conf_title">Configuration </div> 
     <br>
     <form action="save_config">
-	<table class="v">	
+	<table class="v vt">	
 	    <tbody>)";
     divStr += getTR("Measurement interval [s]"
         , R"(<input type="number" name="interval" min="10" style="width: 100px;" placeholder="Measuring interval [sec]" value=")"
@@ -344,7 +359,7 @@ String HtmlContent::configDivNameLoRaWAN()
     <div class="conf_title">Identification + LoRaWAN</div>
     <br>
     <form action="save_config">
-	<table class="v">	
+	<table class="v vt">	
 	    <tbody>)";
     divStr += getTR("Node name <br><small>(not used by LoRaWAN)</small>"
         , R"(<input type="text" name=")"

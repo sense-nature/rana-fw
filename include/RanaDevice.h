@@ -32,6 +32,9 @@ protected:
 
     LoRaWANConn lora;
 
+
+    const uint16_t nextMeasValueAddress = 8; 
+
 public:
     Status status;
     Config config;
@@ -48,6 +51,8 @@ public:
 
     void ReadRTCTime();
     void ReadAndUpdateEepromData();
+    bool SetNextMeasurement(uint32_t nextVal);
+
     void ReadInternalSensorValues();
     void ReadBatteryLevel();
 

@@ -22,6 +22,7 @@ namespace Rana
 
 
         String formSetTimeFromBrowser() const;
+        String formSetNextMeasurment() const;
 
     protected:
         String configDivNameLoRaWAN();

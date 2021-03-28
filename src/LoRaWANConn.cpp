@@ -150,7 +150,6 @@ void afterLoraPacketSent(void *pUserData, int fSuccess){
 void LoRaWANConn::sendData(Rana::Device &device) 
 {
 	ESP_LOGD("Start the message assembly");
-    //uint8_t serialNo = DEVICE_ID;
     std::vector<uint8_t> message;
     message.push_back(0x01);
     message.push_back(device.status.measurementCount);
@@ -162,7 +161,7 @@ void LoRaWANConn::sendData(Rana::Device &device)
         pushTemperatureToMessage(message, device.status.knownProbeTemperatures[i].second);
 
     // Prepare upstream data transmission at the next possible time.
-    lmic_tx_error_t ret = LMIC_sendWithCallback( 1, message.data(), message.size(), 0, afterLoraPacketSent, (void*)(&device));
+    lmic_tx_error_t ret = LMIC_sendWithCallback( device.config.NodeNumber, message.data(), message.size(), 0, afterLoraPacketSent, (void*)(&device));
     if( ret != LMIC_ERROR_SUCCESS ){
         ESP_LOGE(TAG,"Cannot register sending the LoRaWAN package. Error = %d",ret);
     } else {

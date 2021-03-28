@@ -28,8 +28,8 @@ protected:
 
     bool setBinaryFromHexStr(const char * str, uint8_t * data, uint8_t size, const char * name );
 public:
-    String NodeName;
-    const char * NodeName_name = "NodeName";
+    uint8_t NodeNumber;
+    const char * NodeNumber_name = "NodeNumber";
 
     uint8_t DEVADDR[4] = {0};
     const char * DEVADDR_name = "DEVADDR";
@@ -38,7 +38,7 @@ public:
     const char * SF_name = "SF";
 
 
-    void setNodeName(const char * newName);
+    void setNodeNumber(uint8_t newNumber);
     void setDevaddr(const char * strDevname);
     void setSF(uint8_t newVal);
     void setTimeBetween(uint32_t newVal);

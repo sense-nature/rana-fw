@@ -13,7 +13,7 @@ const char * Config::CONFIG_FILE = "/config.jso";
 
 
 
-Config::Config():NodeName("DefaultNodeName")
+Config::Config():NodeNumber(0)
 {
 }
 
@@ -33,7 +33,7 @@ bool Config::SaveConfig(){
     StaticJsonDocument<JSON_DOC_BUFFER_SIZE> json;
     //DynamicJsonDocument json(JSON_DOC_BUFFER);
 
-    json[NodeName_name] = NodeName;
+    json[NodeNumber_name] = NodeNumber;
     json[DEVADDR_name] = binToHexString(DEVADDR, sizeof(DEVADDR));
     json[APPSKEY_name] = binToHexString(APPSKEY, sizeof(APPSKEY));
     json[NWKSKEY_name] = binToHexString(NWKSKEY, sizeof(NWKSKEY));
@@ -60,9 +60,9 @@ void Config::ReadConfig(Status & status)
 
     if( json.size()  > 0 ){ 
         ESP_LOGD(TAG,"Loding config:");
-        JsonVariant jv = json[NodeName_name];
+        JsonVariant jv = json[NodeNumber_name];
         if(  ! jv.isNull()  )
-            setNodeName(jv.as<const char *>());
+            setNodeNumber(jv.as<uint8_t>());
         else
             ESP_LOGW(TAG,"NodeID not found in the config");
 
@@ -105,14 +105,10 @@ void Config::ReadConfig(Status & status)
 }
     
 
-void Config::setNodeName(const char * newName) 
+void Config::setNodeNumber(uint8_t newNumber) 
 {
-    if(strlen(newName) > 0){
-        NodeName =  newName;
-        ESP_LOGD(TAG,"NodeName set to [%s]",NodeName.c_str());
-    } else {
-        ESP_LOGE(TAG,"Empty string passed - NodeName left untouched: [%s]",NodeName.c_str());
-    }
+    NodeNumber =  newNumber;
+    ESP_LOGD(TAG,"NodeName set to [%u]",NodeNumber);
 }
 
 void Config::setDevaddr(const char * strDevname) 
@@ -250,7 +246,7 @@ void Config::ShowConfig()
 {
     Serial.flush();
     Serial.println("Config data: {");
-    Serial.printf("  %s : %s",NodeName_name,NodeName.c_str());
+    Serial.printf("  %s : Rana%u",NodeNumber_name,NodeNumber);
     Serial.println();
 
     Serial.printf("  %s: 0x",DEVADDR_name);

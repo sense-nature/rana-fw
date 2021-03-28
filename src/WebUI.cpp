@@ -203,7 +203,7 @@ void CustomAPWebUI::onSaveConfig()
 	else
 		text +="Interval < 20s, not changed <br>";
 
-	theDevice.config.setNodeName(webServer.arg(theDevice.config.NodeName_name).c_str());
+	theDevice.config.setNodeNumber((uint8_t)atoi(webServer.arg(theDevice.config.NodeNumber_name).c_str()));
 	theDevice.config.setDevaddr(webServer.arg(theDevice.config.DEVADDR_name).c_str());
 	theDevice.config.setNwkskey(webServer.arg(theDevice.config.NWKSKEY_name).c_str());
 	theDevice.config.setAppskey(webServer.arg(theDevice.config.APPSKEY_name).c_str());

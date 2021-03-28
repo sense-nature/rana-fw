@@ -228,7 +228,7 @@ String HtmlContent::currentStateInnerBody()
             </tr>	
 	    </thead>
 	    <tbody>)";
-    stateTable += getTR("Node name", theDevice.config.NodeName);
+    stateTable += getTR("Node Name", "Rana"+String(theDevice.config.NodeNumber));
     stateTable += getTR("MAC address", theDevice.GetHWString());
     int battPercent = (int)(((double)theDevice.status.batteryLevel - 1700.0) / 5.2);
     stateTable += getTR("Battery", String(theDevice.status.batteryLevel) +" &nbsp;(~"+String(battPercent)+"%)");
@@ -363,11 +363,11 @@ String HtmlContent::configDivNameLoRaWAN()
     <form action="save_config">
 	<table class="v vt">	
 	    <tbody>)";
-    divStr += getTR("Node name <br><small>(not used by LoRaWAN)</small>"
-        , R"(<input type="text" name=")"
-        +String(theDevice.config.NodeName_name)
-        +R"(" minlength="3" maxlength="32" style="width: 200px;" placeholder="Node name" value=")"
-        +theDevice.config.NodeName
+    divStr += getTR("Node Number <br><small>(LoRaWAN port)</small>"
+        , R"(Rana<input type="number" name=")"
+        +String(theDevice.config.NodeNumber_name)
+        +R"(" minlength="3" min="1" max="255" style="width: 100px;" placeholder="Node number" value=")"
+        +String(theDevice.config.NodeNumber,10)
         +R"(" >)");        
     divStr += getTR("DEVADDR"
         , R"(<input type="text" name=")"
@@ -378,7 +378,7 @@ String HtmlContent::configDivNameLoRaWAN()
     divStr += getTR("Network Session Key"
         , R"(<input type="text" name=")"
         +String(theDevice.config.NWKSKEY_name)
-        +R"(" minlength="32" maxlength="48" style="width: 280px;" placeholder="LoRaWAN NwksKeyF" value=")"
+        +R"(" minlength="32" maxlength="48" style="width: 280px;" placeholder="LoRaWAN NwksKey" value=")"
         +theDevice.config.getNwksKey()
         +R"(" >)");
     divStr += getTR("Application Session Key"

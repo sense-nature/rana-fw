@@ -231,7 +231,7 @@ String HtmlContent::currentStateInnerBody()
     int battPercent = (int)(((double)theDevice.status.batteryLevel - 1700.0) / 5.2);
     stateTable += getTR("Battery", String(theDevice.status.batteryLevel) +" &nbsp;(~"+String(battPercent)+"%)");
     stateTable += getTR("Local time", theDevice.status.rtcTimeStr());
-    stateTable += getTR("Box temperature", String(theDevice.status.intTemperature)+"&deg;C");
+    stateTable += getTR("Box climate", theDevice.status.getInternalSensorValues());
     stateTable += getTR("Measure interval", 
         String(theDevice.config.TimeBetween)
         +" s  ("

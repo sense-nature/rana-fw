@@ -14,6 +14,7 @@
 #include <EepromAT24C32.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h> 
+#include <Adafruit_HTU21DF.h>
 
 
 using namespace Rana;
@@ -124,19 +125,39 @@ void  Device::sendMeasurementsOveLoRaWAN()
 void Device::ReadInternalSensorValues()
 {
 	Adafruit_BME280 bme;
-	if( ! bme.begin(0x76, &Wire) )
-		return;
-	status.internalSensor = Status::SensorType::BME280;
+	if( bme.begin(0x76, &Wire) ){
+		status.internalSensor = Status::SensorType::BME280;
 
-	bme.setSampling(Adafruit_BME280::sensor_mode::MODE_FORCED
-					, Adafruit_BME280::sensor_sampling::SAMPLING_X1
-					, Adafruit_BME280::sensor_sampling::SAMPLING_X1
-					, Adafruit_BME280::sensor_sampling::SAMPLING_X1
-					,Adafruit_BME280::sensor_filter::FILTER_OFF);
+		bme.setSampling(Adafruit_BME280::sensor_mode::MODE_FORCED
+						, Adafruit_BME280::sensor_sampling::SAMPLING_X1
+						, Adafruit_BME280::sensor_sampling::SAMPLING_X1
+						, Adafruit_BME280::sensor_sampling::SAMPLING_X1
+						,Adafruit_BME280::sensor_filter::FILTER_OFF);
 
-	status.intTemperature = bme.readTemperature(); /* *C */
-	status.intHumidity = roundf(bme.readHumidity()); /* % */
-	status.intPressure = roundf(bme.readPressure() / 100.0F /* hPa */);
+		status.intTemperature = bme.readTemperature(); /* *C */
+		status.intHumidity = roundf(bme.readHumidity()); /* % */
+		status.intPressure = roundf(bme.readPressure() / 100.0F /* hPa */);
+	} else {
+		Adafruit_HTU21DF htu21d;
+		bool bPresent = htu21d.begin();
+		if( ! bPresent  ){
+			Wire.beginTransmission(HTU21DF_I2CADDR);
+			Wire.write(HTU21DF_READREG);
+			Wire.endTransmission();
+			Wire.requestFrom(HTU21DF_I2CADDR, 1);
+			if( Wire.read() == 0x3A){
+         		ESP_LOGD(TAG,"Found Si7120 instead of HTU21D");
+				bPresent = true;
+			}
+      	}
+		if( bPresent ){
+			status.intTemperature = htu21d.readTemperature(); /* *C */
+			status.intHumidity = roundf(htu21d.readHumidity()); /* % */
+			status.internalSensor = Status::SensorType::HTU21;
+		} else {
+			status.internalSensor = Status::SensorType::NoSensor;
+		}
+	}
 }
 
 void Device::ReadDS18B20Temperatures()

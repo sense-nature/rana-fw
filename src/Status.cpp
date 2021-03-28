@@ -50,6 +50,21 @@ bool Status::enterConfigMode()
     return false;    
 }
 
+String Status::getInternalSensorValues() 
+{
+    
+    if( internalSensor != SensorType::NoSensor){
+        char tempStr[10]={0};
+        sprintf(tempStr,"%.2f",intTemperature);
+        if( internalSensor == SensorType::BME280 )
+            return String(tempStr)+" &deg;C, "+String((int)intHumidity,10)+"% (BME280)";
+
+        if( internalSensor == SensorType::HTU21 )
+            return String(tempStr)+" &deg;C, "+String((int)intHumidity,10)+"% (HTU21)";
+        
+    } 
+    return "No Internal Sensor ";
+}
 
 
 

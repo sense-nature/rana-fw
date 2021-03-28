@@ -52,6 +52,11 @@ public:
     float intTemperature = NotDefined;
     float intHumidity = NotDefined;
     float intPressure = NotDefined;
+
+    String getInternalSensorValues();
+
+
+
     std::map<uint8_t,std::pair<DevAddrArray_t, float>> knownProbeTemperatures; 
     std::vector<std::pair<DevAddrArray_t, float>> unknownProbeTemperatures;
 
@@ -68,6 +73,7 @@ public:
     bool SaveToSD();
 
 };
+
 
 
 

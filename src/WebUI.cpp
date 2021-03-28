@@ -115,7 +115,7 @@ void CustomAPWebUI::setupWebserver()
 	webServer.on("/time",[this](){this->onTime();});
 	webServer.on("/assign",[this](){this->onAssign();});
 	webServer.on("/next_measurement",[this](){this->onNextMeasurement();});
-	//webServer.on("/probes",[this](){this->onProbes();});
+	webServer.on("/restart",[this](){this->onRestart();});
 	//webServer.on(("/wifi", webserver_wifi);
 
 		//server.on(F("/values"), webserver_values);
@@ -125,7 +125,11 @@ void CustomAPWebUI::setupWebserver()
 }
 
 
-
+void CustomAPWebUI::onRestart()
+{
+	staticBootCount = 0;
+	esp_restart();
+}
 
 
 void CustomAPWebUI::onAssign()

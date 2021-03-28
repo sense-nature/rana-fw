@@ -73,6 +73,8 @@ public:
 	void serverRoot();
 	void defaultNotFound();
 
+
+	void onRestart();
 	void onTime();
 	void onAssign();
 	void onConfig();

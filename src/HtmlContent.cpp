@@ -85,7 +85,9 @@ const char * HtmlContent::getPageFooter() const
             <hr>
             <a href="state">Current box state</a>
             &nbsp;&nbsp;&nbsp;&nbsp;
-            <a href="config">Configuration</a><br>
+            <a href="config">Configuration</a>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <a href="restart">Restart node</a><br>
         </div>
     </body>
 </html>)";

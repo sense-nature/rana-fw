@@ -333,8 +333,6 @@ void Device::GotoDeepSleep()
 	//from https://github.com/Heltec-Aaron-Lee/WiFi_Kit_series/issues/6#issuecomment-518896314
 	pinMode(RST_LoRa,INPUT);
 	SPI.end();
-
-
 /*
 	pinMode(KEY_BUILTIN, INPUT_PULLDOWN);
 	esp_sleep_enable_ext0_wakeup((gpio_num_t)KEY_BUILTIN, 1);
@@ -344,6 +342,8 @@ void Device::GotoDeepSleep()
 	VextOFF();
 
 	uint64_t sleepTimeUs = sToMicroS(config.TimeBetween);
+ 	if( staticBootCount < 15 ) //first 15 times run go to sleep only for 60s - useful for installation process
+	   sleepTimeUs = sToMicroS(60);
 	uint64_t workTimeMs = status.millisFromStart();
 	ESP_LOGI(TAG,"Work time %ums",workTimeMs);
 	uint64_t workTimeUs = milliToMicroS(workTimeMs);

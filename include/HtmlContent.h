@@ -20,10 +20,14 @@ namespace Rana
         String currentStateInnerBody();
         String configInnerBody();
 
+
+        String formSetTimeFromBrowser() const;
+
     protected:
         String configDivNameLoRaWAN();
         String configDivGeneral();
         String configDivProbeAssignment(); 
+        String configDivRTC();
 
 
         String knownProbesTemperatures();

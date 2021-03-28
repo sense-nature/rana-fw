@@ -31,7 +31,8 @@ class Status
 public:
     constexpr static float NotDefined = -127.0;
     enum class SensorType { NoSensor, BME280, HTU21 };
-    enum class RTCState { NoRTC, SetFromBuildTime, SetFromOtherSource, RTC_OK };
+    enum class RTCState { NoRTC, TIME_SET_FROM_DEFAULT_TIME, RTC_NOT_RUNNING, RTC_OK };
+
 
 
     esp_sleep_wakeup_cause_t wakeUpReson = ESP_SLEEP_WAKEUP_UNDEFINED;
@@ -42,7 +43,8 @@ public:
 
     bool lcd = false;
     RTCState rtc = RTCState::NoRTC;
-    RtcDateTime utcRtcStartupTime;
+    RtcDateTime rtcUtcTime;
+    String rtcTimeStr() const ;
 
     bool sd = false;
     uint16_t batteryLevel = 0 ;
@@ -64,9 +66,6 @@ public:
 
     bool enterConfigMode();
     bool SaveToSD();
-
-
-
 
 };
 

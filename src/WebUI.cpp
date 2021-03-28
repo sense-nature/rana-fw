@@ -202,10 +202,7 @@ void CustomAPWebUI::onSaveConfig()
 	theDevice.config.setDevaddr(webServer.arg(theDevice.config.DEVADDR_name).c_str());
 	theDevice.config.setNwkskey(webServer.arg(theDevice.config.NWKSKEY_name).c_str());
 	theDevice.config.setAppskey(webServer.arg(theDevice.config.APPSKEY_name).c_str());
-	theDevice.config.setSF((uint8_t)atoi(webServer.arg(theDevice.config.SF_name).c_str()));
-	int iNumProbes = atoi(webServer.arg("number_of_probes").c_str());
-	int iLastProbeIndex = theDevice.config.lastProbeIndex(); 
-	
+	theDevice.config.setSF((uint8_t)atoi(webServer.arg(theDevice.config.SF_name).c_str()));	
 
 	theDevice.config.SaveConfig();
 	theDevice.config.ShowConfig();
@@ -235,11 +232,8 @@ void CustomAPWebUI::onTime()
 			content += "RTC low battery or time not set in the RTC";
 		}
 	} else {
-		if( rtc.LastError() == 0 ) {
-			RtcDateTime now = rtc.GetDateTime();			
-			content += rtcDTToString(now);
-
-		}
+		theDevice.ReadRTCTime();
+		content += theDevice.status.rtcTimeStr();
 	}
 	if(!source.isEmpty()){
 		if(source.equalsIgnoreCase("browser") && !timestamp.isEmpty() ){
@@ -248,18 +242,19 @@ void CustomAPWebUI::onTime()
 			ESP_LOGD(TAG,"TS: %d", ts);
 			RtcDateTime rdt = rdtFromTimestamp(ts);
 			rtc.SetDateTime(rdt);
-			content += ("\n\rRTC set to [" + rtcDTToString(rdt) + "] based on browser time");
+			content += ("\n\rExtRTC set to [" + rtcDTToString(rdt) + "] based on browser time");
 		}
 	} 
 
-	webServer.sendContent(content);
+	serve(content);
 }
 
 
 void CustomAPWebUI::serverRoot()
 {
 	theDevice.ReadDS18B20Temperatures();
-	theDevice.GetInternalSensorValues();
+	theDevice.ReadInternalSensorValues();
+	theDevice.ReadRTCTime();
 	serve(htmlContent.currentStateInnerBody());
 
 /*

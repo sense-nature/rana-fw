@@ -11,9 +11,6 @@ const char * TDs = "<td>";
 const char * TDe = "</td>";
 
 
-
-
-
 HtmlContent::HtmlContent(Device & dev):theDevice(dev) 
 {}
 
@@ -58,11 +55,21 @@ const char * HtmlContent::getPageTop() const
             .vt{
                 border-spacing: 1px 0;	
             }	
-            .vt>tbody>tr>td{
-                padding: 2px 20px 2px 20px;	
-                border-top-style: solid;
-                border-top-width: thin;;
+            .conf_div{
+                background:#f8f8f8;
+                border-style: solid;
+                border-width: 1px;
+                margin: 10px;
+                padding: 10px;
+            }
+            .conf_title{
+                font-weight: bold;
+            }
 
+            .vt>tbody>tr>td{
+                padding: 15px 20px 15px 20px;	
+                border-top-style: solid;
+                border-top-width: thin;
             }
         </style>
     </head>
@@ -77,7 +84,7 @@ const char * HtmlContent::getPageFooter() const
         <div class="footer">
             <hr>
             <a href="state">Current box state</a>
-            <br>
+            &nbsp;&nbsp;&nbsp;&nbsp;
             <a href="config">Configuration</a><br>
         </div>
     </body>
@@ -94,7 +101,8 @@ String getTR(const String &firstCell, const String &secondCell)
 
 String HtmlContent::unknownProbesDropdown()
 {
-    String  out = R"(<select name="address">\n)";
+    String  out = R"(<select name="address">
+)";
     for(auto it = theDevice.status.unknownProbeTemperatures.begin(); it!=theDevice.status.unknownProbeTemperatures.end(); it++){
         String addr = devAddrToString(it->first);
         String option = R"(<option value="{1}">{1}</option>
@@ -153,6 +161,43 @@ String HtmlContent::knownProbesTemperatures()
 
 }
 
+
+String HtmlContent::formSetTimeFromBrowser() const
+{
+    String sForm = R"(
+    	<form name="time_from_browser" action="time" method="get" onsubmit="{timestamp.value = Math.round(Date.now()/1000.0); return true;}" >
+				<input type="hidden" name="timestamp" value="" />
+				<button type="submit" name="source" value="browser"  >Time from the web browser</button>				
+				<button type="submit" name="source" value=""  >Check current time</button>				
+			</form>   
+)";
+    return sForm;       
+}
+
+
+String HtmlContent::configDivRTC()
+{
+     String divStr;
+    divStr.reserve(2024);
+
+    divStr+=R"(
+    <div class="conf_div">
+        <div class="conf_title">External RTC + Time</div>
+    <br>
+   <table class="v">
+        <tbody>
+)";
+    divStr+= getTR("Local time", theDevice.status.rtcTimeStr() + formSetTimeFromBrowser());        
+
+    divStr+=R"( 
+        </tbody>
+    </table>
+    </div>
+    )";
+    return divStr;
+}
+
+
 String HtmlContent::currentStateInnerBody()
 {
     String stateTable;
@@ -170,7 +215,8 @@ String HtmlContent::currentStateInnerBody()
     stateTable += getTR("Node name", theDevice.config.NodeName);
     stateTable += getTR("MAC address", theDevice.GetHWString());
     int battPercent = (int)(((double)theDevice.status.batteryLevel - 1700.0) / 5.2);
-    stateTable += getTR("Battery", String(theDevice.status.batteryLevel) +" ~ "+String(battPercent)+"%");
+    stateTable += getTR("Battery", String(theDevice.status.batteryLevel) +" &nbsp;(~"+String(battPercent)+"%)");
+    stateTable += getTR("Local time", theDevice.status.rtcTimeStr());
     stateTable += getTR("Measure interval", 
         String(theDevice.config.TimeBetween)
         +" s  ("
@@ -195,7 +241,9 @@ String HtmlContent::configDivGeneral()
     String divStr;
     divStr.reserve(2024);
 
-    divStr+=R"(<div>Configuration
+    divStr+=R"(<div class="conf_div">
+    <div class="conf_title">Configuration </div> 
+    <br>
     <form action="save_config">
 	<table class="v">	
 	    <tbody>)";
@@ -219,7 +267,9 @@ String HtmlContent::configDivProbeAssignment()
  String divStr;
     divStr.reserve(2024);
 
-    divStr+=R"(<div>Probes address assignment
+    divStr+=R"(<div class="conf_div">
+     <div class="conf_title">Probes address assignment</div> 
+     <br>
 )";
 
     String table;
@@ -227,9 +277,11 @@ String HtmlContent::configDivProbeAssignment()
     table += R"(
         <table class="v vt">
 			<thead>
+                <tr>
 				<th>T#</th>
 				<th>address</th>
 				<th>current<br>temperature</th>
+                </tr>
 			</thead>
 			<tbody>)";
 
@@ -288,7 +340,9 @@ String HtmlContent::configDivNameLoRaWAN()
     String divStr;
     divStr.reserve(2024);
 
-    divStr+=R"(<div>Name + LoRaWAN
+    divStr+=R"(<div class="conf_div"> 
+    <div class="conf_title">Identification + LoRaWAN</div>
+    <br>
     <form action="save_config">
 	<table class="v">	
 	    <tbody>)";
@@ -329,7 +383,7 @@ String HtmlContent::configDivNameLoRaWAN()
     divStr+=R"(</tbody>
 	</table>
     <br>
-    <input type="submit" value="Save Name + LoRaWAN"/>
+    <input type="submit" value="Save Ident + LoRaWAN"/>
     </form>
 </div>
 )";
@@ -339,12 +393,16 @@ String HtmlContent::configDivNameLoRaWAN()
 
 String HtmlContent::configInnerBody()
 {
+    const char * brrr = "<br><br>\n";
     String body;
     body.reserve(4*1024);
-
+    body += configDivRTC();
+    body += brrr;
     body += configDivGeneral();
+    body += brrr;
     body += configDivProbeAssignment();
+    body += brrr;
     body += configDivNameLoRaWAN();
-
+    body += brrr;
     return body;
 }

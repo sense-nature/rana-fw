@@ -74,16 +74,16 @@ void Device::StartDevice()
 	config.ShowConfig();
 	Wire.begin(SDA_Pin, SCL_Pin);
 	Rana::Device::GetDisplay();
-	UpdateEepromData();
-	UpdateRTCData();
+	ReadAndUpdateEepromData();
+	ReadRTCTime();
 	ReadDS18B20Temperatures();
 	GetDisplay()->flipScreenVertically();
 	GetDisplay()->drawString(0, 0, "# " + String(status.getBootCount())+" | "+String(status.measurementCount)); 
 	GetDisplay()->drawString(0, 33," probes: " + String(status.unknownProbeTemperatures.size() +status.knownProbeTemperatures.size()));
 	GetDisplay()->display();
 	delay(1000);
-	GetInternalSensorValues();
-	GetBatteryLevel();
+	ReadInternalSensorValues();
+	ReadBatteryLevel();
 	status.SaveToSD();  
 	FSWrapper::EndDSCardOps();
 
@@ -121,7 +121,7 @@ void  Device::sendMeasurementsOveLoRaWAN()
 }
 
 
-void Device::GetInternalSensorValues()
+void Device::ReadInternalSensorValues()
 {
 	Adafruit_BME280 bme;
 	if( ! bme.begin(0x76, &Wire) )
@@ -144,23 +144,15 @@ void Device::ReadDS18B20Temperatures()
 	OWTemperatures::ReadValues(OneWire_Pin, config ,status);
 }
 
-void Device::UpdateRTCData()
-{ 
-	//instead of build time, 2020-01-01 00:00:00 is used to save time on recompilation
-	//to use real build tome, add 	-D PROJECT_BUILD_TIME=$UNIX_TIME to the build_flags in platformio.ini
-	time_t bt_unix = 1609459200;  //PROJECT_BUILD_TIME;;
-	struct tm bt;
-	gmtime_r(&bt_unix, &bt);
-	const RtcDateTime buildTS = RtcDateTime(bt.tm_year+1900, bt.tm_mon+1, bt.tm_mday,bt.tm_hour, bt.tm_min, bt.tm_sec);	
-	ESP_LOGI(TAG,"Build timestamp UTC date: %04u-%02u-%02u %02u:%02u:%02u", 
-		buildTS.Year(), 
-		buildTS.Month(), 
-		buildTS.Day(), 
-		buildTS.Hour(), 
-		buildTS.Minute(),
-		buildTS.Second()
-	);
 
+void Device::ReadRTCTime()
+{ 
+	// defaut time set manually, used epochconverter.com
+	// buildtimestamp is costly because it forces full recompilation
+	// time_t defaultTimeUnix = 1616889600;  	// 2021-03-28 00:00:00 UTC
+	const RtcDateTime defaultDT = rdtFromTimestamp( 1616889600 );	
+
+	ESP_LOGI(TAG,"Default timestamp UTC date: %s", rtcDTToString(defaultDT).c_str() );
 	RtcDS3231<TwoWire> rtc(Wire);
 	rtc.Begin();
 	if( ! rtc.IsDateTimeValid() ){
@@ -172,43 +164,27 @@ void Device::UpdateRTCData()
 		}
 	} 
 	if( rtc.LastError() == 0 ) {
-		RtcDateTime buildPlus1m(buildTS.Year(), 
-			buildTS.Month(), 
-			buildTS.Day(), 
-			buildTS.Hour(), 
-			buildTS.Minute()+1,
-			buildTS.Second());
 		if( ! rtc.GetIsRunning() ){
 			ESP_LOGI(TAG,"RTC not running -> setting to build timestamp + 1 minute");
-			rtc.SetIsRunning(true);
-			rtc.SetDateTime(buildPlus1m);
-			status.rtc = Status::RTCState::SetFromBuildTime;
+			status.rtc = Status::RTCState::RTC_NOT_RUNNING;
 		} else {
 			RtcDateTime now = rtc.GetDateTime();
-    		if (now <  buildTS ) {
-				rtc.SetDateTime(buildPlus1m);
-				ESP_LOGI(TAG,"RTC time earlier than build time -> setting to build timestamp + 1 minute");
-				status.rtc = Status::RTCState::SetFromBuildTime;
+    		if (now <  defaultDT ) {
+				rtc.SetDateTime(defaultDT);
+				ESP_LOGI(TAG,"RTC time earlier than the default time -> setting to the default timestamp");
+				status.rtc = Status::RTCState::TIME_SET_FROM_DEFAULT_TIME;
 			} else {
 				status.rtc = Status::RTCState::RTC_OK;
-
 			}
 		}	
-		status.utcRtcStartupTime = rtc.GetDateTime();
-		ESP_LOGI(TAG,"Set UTC status time from the RTC %4u-%02u-%02u %02u:%02u:%02u", 
-			status.utcRtcStartupTime.Year(), 
-			status.utcRtcStartupTime.Month(), 
-			status.utcRtcStartupTime.Day(), 
-			status.utcRtcStartupTime.Hour(), 
-			status.utcRtcStartupTime.Minute(),
-			status.utcRtcStartupTime.Second()
-		);
+		status.rtcUtcTime = rtc.GetDateTime();
+		ESP_LOGI(TAG,"Current ExtRTC time:  %s", rtcDTToString(status.rtcUtcTime).c_str());
 		rtc.Enable32kHzPin(false);
     	rtc.SetSquareWavePin(DS3231SquareWavePin_ModeNone); 
 	}
 
 }
-void Device::UpdateEepromData()
+void Device::ReadAndUpdateEepromData()
 {
 	EepromAt24c32<TwoWire> eeprom(Wire);
 	eeprom.Begin();
@@ -244,7 +220,7 @@ void Device::UpdateEepromData()
  * Returns a raw value from the integrated voltage divider. 
  * Max voltage ~2200, min ~1730 
  **/
-void Device::GetBatteryLevel() 
+void Device::ReadBatteryLevel() 
 {
     //works only on the older moduled, chipid xxxx 5B1DA0D8 , not the v2.1
 

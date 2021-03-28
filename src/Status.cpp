@@ -56,7 +56,7 @@ bool Status::enterConfigMode()
 const char * Status::getWUResonStr()
 {
     static char sDefaultReason[30];
-    sprintf(sDefaultReason, "NotDSWU (%d)", wakeUpReson);
+    sprintf(sDefaultReason, "Not Deep Sleep wakeup (%d)", wakeUpReson);
     switch(wakeUpReson)
     {
         case ESP_SLEEP_WAKEUP_EXT0 : return "DSWU:ext RTC_IO"; break;
@@ -69,6 +69,21 @@ const char * Status::getWUResonStr()
 }                          
 
 
+String Status::rtcTimeStr() const 
+{
+    //RTCState { NoRTC, TIME_SET_FROM_DEFAULT_TIME, RTC_NOT_RUNNING, RTC_OK
+    switch(rtc)
+    {
+        case RTCState::NoRTC : return "No ExtRTC"; 
+        case RTCState::TIME_SET_FROM_DEFAULT_TIME : return  rtcDTToString(rtcUtcTime)+",  set from DEFAULT_TIME";
+        case RTCState::RTC_NOT_RUNNING : return "ExtRTC Not Running";
+        case RTCState::RTC_OK : return  rtcDTToString(rtcUtcTime)+",  ExtRTC OK";
+    }
+    return "Unknown ExtRTC status";
+}
+
+
+
 unsigned long Status::millisFromStart()
 {
     return millis() - startupTime;
@@ -79,7 +94,7 @@ bool Status::SaveToSD()
     //StaticJsonDocument<JSON_DOC_BUFFER_SIZE> json;
     DynamicJsonDocument json(3000);
 
-    json["TS"] = rtcDTToString(utcRtcStartupTime);
+    json["TS"] = rtcDTToString(rtcUtcTime);
     json["bootCount"] = staticBootCount;
     json["measurementCount"] = measurementCount;
     json["batteryLevel"] = batteryLevel;

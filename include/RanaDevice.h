@@ -30,10 +30,6 @@ protected:
 
     const static uint8_t Battery_Pin = 13;
 
-
-
-    
-
     LoRaWANConn lora;
 
 public:
@@ -50,10 +46,10 @@ public:
     static void LedOFF();
 
 
-    void UpdateRTCData();
-    void UpdateEepromData();
-    void GetInternalSensorValues();
-    void GetBatteryLevel();
+    void ReadRTCTime();
+    void ReadAndUpdateEepromData();
+    void ReadInternalSensorValues();
+    void ReadBatteryLevel();
 
 	void startWebConfig();
     void sendMeasurementsOveLoRaWAN();

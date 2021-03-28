@@ -204,7 +204,7 @@ void Config::setProbes(JsonDocument & root)
 }
 
 
-void Config::setProbeAddess(uint8_t idx, const char * strHexAddress) 
+bool Config::setProbeAddess(uint8_t idx, const char * strHexAddress) 
 {
     DevAddrArray_t tmp;
     String stripped = stripNonHexChars(strHexAddress);
@@ -213,10 +213,26 @@ void Config::setProbeAddess(uint8_t idx, const char * strHexAddress)
     if( read ){
         this->Probes[idx] = tmp;
         ESP_LOGD(TAG, "Probe[%d] set to 0x%s (%s)",idx,devAddrToString(tmp).c_str(), stripped.c_str() );
+        return true;
     } else {
         ESP_LOGE(TAG, "Invalid value [%s] for ProbeDevice address, not set",strHexAddress);
+        return false;
     }
 }
+
+bool Config::releaseProbe(uint8_t idx) 
+{
+    if(Probes.count(idx) > 0 ){
+        String addr = devAddrToString(Probes[idx]);
+        Probes.erase(idx);
+        ESP_LOGD(TAG, "Probe T[%d] = [%s] released / removed from the config",idx, addr.c_str() );
+        return true;
+    } else {
+        ESP_LOGE(TAG, "Could not release Probe T[%d] - not found in the config",idx);
+        return false;
+    }
+}
+
 
 
 uint8_t Config::lastProbeIndex()

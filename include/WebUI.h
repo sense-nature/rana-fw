@@ -69,7 +69,7 @@ public:
 	CustomAPWebUI(Device &dev);
 	virtual ~CustomAPWebUI();
 
-	bool startAPWebUI();
+	bool startWebUI();
 	void serverRoot();
 	void defaultNotFound();
 
@@ -87,6 +87,8 @@ protected:
 	virtual void runWebserver(const IPAddress & ip);
 
 	void serve(const String & content);
+
+	bool boolParam(const char * parmName);
 
 };
 

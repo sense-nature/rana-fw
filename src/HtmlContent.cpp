@@ -167,8 +167,8 @@ String HtmlContent::currentStateInnerBody()
             </tr>	
 	    </thead>
 	    <tbody>)";
+    stateTable += getTR("Node name", theDevice.config.NodeName);
     stateTable += getTR("MAC address", theDevice.GetHWString());
-    stateTable += getTR("Box name", theDevice.config.NodeName);
     int battPercent = (int)(((double)theDevice.status.batteryLevel - 1700.0) / 5.2);
     stateTable += getTR("Battery", String(theDevice.status.batteryLevel) +" ~ "+String(battPercent)+"%");
     stateTable += getTR("Measure interval", 
@@ -189,66 +189,162 @@ String HtmlContent::currentStateInnerBody()
     return stateTable;
 }
 
-String HtmlContent::configInnerBody()
-{
-    String body;
-    body.reserve(2024);
 
-    body+=R"(<div>Configuration
+String HtmlContent::configDivGeneral()
+{
+    String divStr;
+    divStr.reserve(2024);
+
+    divStr+=R"(<div>Configuration
     <form action="save_config">
 	<table class="v">	
 	    <tbody>)";
-    body += getTR("Node name"
+    divStr += getTR("Measurement interval [s]"
+        , R"(<input type="number" name="interval" min="10" style="width: 100px;" placeholder="Measuring interval [sec]" value=")"
+        +String(theDevice.config.TimeBetween)
+        +R"(" > seconds)");
+    divStr+=R"(</tbody>
+	</table>
+    <br>
+    <input type="submit" value="Save config"/>
+    </form>
+</div>
+)";
+    return divStr;
+
+}
+
+String HtmlContent::configDivProbeAssignment()
+{
+ String divStr;
+    divStr.reserve(2024);
+
+    divStr+=R"(<div>Probes address assignment
+)";
+
+    String table;
+    table.reserve(1024);
+    table += R"(
+        <table class="v vt">
+			<thead>
+				<th>T#</th>
+				<th>address</th>
+				<th>current<br>temperature</th>
+			</thead>
+			<tbody>)";
+
+        const String releaseForm = R"(<form action="assign">
+            <input type="hidden" name="T" value="{1}">
+            <input type="hidden" name="address" value="Release">
+            <input type="submit" value="Release address">
+        </form>
+        )";
+        const String assignForm = R"(<form action="assign">
+    <input type="hidden" name="T" value="{1}">
+    {S}
+    <input type="submit" value="Assign">
+</form>)";
+
+    uint8_t lastIndex = 7;
+    for(auto it = theDevice.config.Probes.begin(); it != theDevice.config.Probes.end(); it++ )
+        if(lastIndex < it->first)
+            lastIndex = it->first;
+    for(uint8_t index = 0; index<=lastIndex; index++){
+        String strAddreess = "NOT ASSIGNED";
+        if(theDevice.config.Probes.count(index) >0 )
+            strAddreess = devAddrToString(theDevice.config.Probes[index]);
+//    for(auto it = theDevice.config.Probes.begin(); it != theDevice.config.Probes.end(); it++ ){
+        String s = R"(<tr><td>T{1}</td><td>{2}</td><td>{3}</td></tr>
+)";
+        auto i2 = theDevice.status.knownProbeTemperatures.find(index);
+        if( i2 != theDevice.status.knownProbeTemperatures.end() ){
+            s.replace("{3}",String(i2->second.second)+" &deg;C " + releaseForm);       
+        } else {
+            if(theDevice.status.unknownProbeTemperatures.empty()){
+                s.replace("{3}","NOT FOUND!!! " + releaseForm);
+            } else {
+                s.replace("{3}",assignForm);
+                s.replace("{S}",unknownProbesDropdown());
+            }
+        }
+        s.replace("{1}",String(index));
+        s.replace("{2}",strAddreess);
+        table += s;
+    }
+    table += R"(
+            </tbody>		
+		</table>)";
+    divStr += table;
+
+    divStr+=R"(
+</div>
+)";
+    return divStr;
+} 
+
+
+String HtmlContent::configDivNameLoRaWAN()
+{
+    String divStr;
+    divStr.reserve(2024);
+
+    divStr+=R"(<div>Name + LoRaWAN
+    <form action="save_config">
+	<table class="v">	
+	    <tbody>)";
+    divStr += getTR("Node name <br><small>(not used by LoRaWAN)</small>"
         , R"(<input type="text" name=")"
         +String(theDevice.config.NodeName_name)
         +R"(" minlength="3" maxlength="32" style="width: 200px;" placeholder="Node name" value=")"
         +theDevice.config.NodeName
-        +R"(" >)");
-
-    body += getTR("DEVADDR"
+        +R"(" >)");        
+    divStr += getTR("DEVADDR"
         , R"(<input type="text" name=")"
         +String(theDevice.config.DEVADDR_name)
         +R"(" minlength="4" maxlength="8" style="width: 100px;" placeholder="LoRaWAN Device Address" value=")"
         +theDevice.config.getDevAddr()
         +R"(" >)");
-    body += getTR("Network Session Key"
+    divStr += getTR("Network Session Key"
         , R"(<input type="text" name=")"
         +String(theDevice.config.NWKSKEY_name)
         +R"(" minlength="32" maxlength="48" style="width: 280px;" placeholder="LoRaWAN NwksKeyF" value=")"
         +theDevice.config.getNwksKey()
         +R"(" >)");
-    body += getTR("Application Session Key"
+    divStr += getTR("Application Session Key"
         , R"(<input type="text" name=")"
         +String(theDevice.config.APPSKEY_name)
         +R"(" minlength="32" maxlength="48" style="width: 280px;" placeholder="LoRaWAN AppsKey" value=")"
         +theDevice.config.getAppsKeyStr()
         +R"(" >)");
-    body += getTR("LoRaWAN Spreading Factor"
+    divStr += getTR("LoRaWAN Spreading Factor"
         , R"(<input type="number" name=")"
         +String(theDevice.config.SF_name)
         +R"(" min="7" max="12" style="width: 100px;" placeholder="LoRaWAN SF" value=")"
         +String(theDevice.config.SF)
         +R"(" >)");
-    body += getTR("Measurement interval [s]"
+    divStr += getTR("Measurement interval [s]"
         , R"(<input type="number" name="interval" min="10" style="width: 100px;" placeholder="Measuring interval [sec]" value=")"
         +String(theDevice.config.TimeBetween)
         +R"(" > seconds)");
-    body += getTR("Number of probes"
-        , R"(<input type="number" name="number_of_probes" min="0" style="width: 100px;" placeholder="Number of assigned probes" value=")"
-        +String(theDevice.config.lastProbeIndex() +1)
-        +R"(" >)");
-
-
-//    body += getTR("Wakeup reason", theDevice.status.getWUResonStr());
-//    body += getTR("#boot", String(theDevice.status.getBootCount()));
-//    body += getTR("Temperatures", knownProbesTemperatures());
-    body+=R"(</tbody>
+    divStr+=R"(</tbody>
 	</table>
     <br>
-    <input type="submit" value="Save config"/>
+    <input type="submit" value="Save Name + LoRaWAN"/>
     </form>
-</div>)";
+</div>
+)";
+    return divStr;
+}
+
+
+String HtmlContent::configInnerBody()
+{
+    String body;
+    body.reserve(4*1024);
+
+    body += configDivGeneral();
+    body += configDivProbeAssignment();
+    body += configDivNameLoRaWAN();
+
     return body;
-
-
 }

@@ -56,10 +56,17 @@ void Device::LedOFF()
     digitalWrite(LED_BUILTIN, LOW);    
 }
 
+String Device::GetHWString()
+{
+	String ret(WiFi.macAddress());
+	return ret;
+}
+
+
 void Device::StartDevice() 
 {
     status.startUpNow();
-//	attachInterrupt(KEY_BUILTIN, keyPressed, CHANGE);
+	attachInterrupt(KEY_BUILTIN, keyPressed, CHANGE);
 	Serial.begin(115200ul);
 	ESP_LOGI(TAG, "\n--------------\n----------------\nRana start");
 	Rana::Device::VextON();
@@ -88,7 +95,6 @@ void Device::StartDevice()
 }
 
 
-
 void Device::Loop() 
 {
     lora.Loop();
@@ -101,7 +107,7 @@ void  Device::startWebConfig()
 {
 	ESP_LOGI("Starting web config");
 	CustomAPWebUI webUI(*this);
-	webUI.startAPWebUI();	
+	webUI.startWebUI();	
 }
 
 void  Device::sendMeasurementsOveLoRaWAN()

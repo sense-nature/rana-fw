@@ -64,6 +64,8 @@ public:
     void ReadConfigFromSD();
     void SaveConfigToSD();
 
+    String GetHWString();
+
     void Loop();
     void GotoDeepSleep();
 };

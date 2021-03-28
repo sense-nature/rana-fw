@@ -33,8 +33,7 @@ public:
     enum class SensorType { NoSensor, BME280, HTU21 };
     enum class RTCState { NoRTC, SetFromBuildTime, SetFromOtherSource, RTC_OK };
 
-//ToDo: Add MAC addr, chip ID, type, framework version 
-    String nodeName; 
+
     esp_sleep_wakeup_cause_t wakeUpReson = ESP_SLEEP_WAKEUP_UNDEFINED;
 
 

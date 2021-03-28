@@ -125,14 +125,53 @@ void CustomAPWebUI::setupWebserver()
 
 
 
+
+
 void CustomAPWebUI::onAssign()
 {
-	String innerHtmlBody =  webServer.arg("address")+" to be assigned to T#"+webServer.arg("T");
-	theDevice.config.setProbeAddess( (uint8_t)atoi(webServer.arg("T").c_str()), webServer.arg("address").c_str());   
+	String strIdx = webServer.arg("T");
+	uint8_t idx = (uint8_t)atoi(strIdx.c_str());
+	String addr = webServer.arg("address");
 
-	theDevice.config.SaveConfig();
-	theDevice.config.ShowConfig();
-	innerHtmlBody+=R"( \n<br><a href="/">go to status</a>)";
+	String innerHtmlBody;
+	if( boolParam("confirmed") ){
+		if( ! strIdx.equals( String(idx, 10 ) )  )  {
+			innerHtmlBody =  String("Invalid Probe index argument given [") + strIdx + "]";  
+			//ESP_LOGE(TAG, innerHtmlBody.c_str() ) ;
+
+		} else {
+			bool bSuccess = false;
+			if( addr.equalsIgnoreCase("release") ){
+				if( bSuccess = theDevice.config.releaseProbe(idx))
+					innerHtmlBody = String("Released Probe T[")+strIdx+"]"; 
+			} else {
+				if( bSuccess = theDevice.config.setProbeAddess( idx, addr.c_str() ) )  	
+					innerHtmlBody = String("Assigned Probe T[")+strIdx+"] addess ["+addr+"]";  
+			}
+			if(bSuccess){
+				theDevice.config.SaveConfig();
+				theDevice.config.ShowConfig();
+				theDevice.ReadDS18B20Temperatures();
+			} else {
+				innerHtmlBody = String("Error while assinging adress. T=[")+strIdx+"] addess=["+addr+"]";  
+			}
+		}
+	} else {
+		innerHtmlBody =  R"(
+		You are about to change:<br>
+		probe T{1} => address: {2}
+		<br>			
+		<form>
+            <input type="hidden" name="T" value="{1}">
+            <input type="hidden" name="address" value="{2}">
+            <input type="hidden" name="confirmed" value="true">
+            <input type="submit" value="Confirm the change">
+        </form>
+        )";
+		innerHtmlBody.replace("{1}", strIdx);
+		innerHtmlBody.replace("{2}", addr);
+	}
+	//innerHtmlBody+=R"( \n<br><a href="/">go to status</a>)";
 	serve(innerHtmlBody);
 }
 
@@ -159,6 +198,7 @@ void CustomAPWebUI::onSaveConfig()
 	else
 		text +="Interval < 20s, not changed <br>";
 
+	theDevice.config.setNodeName(webServer.arg(theDevice.config.NodeName_name).c_str());
 	theDevice.config.setDevaddr(webServer.arg(theDevice.config.DEVADDR_name).c_str());
 	theDevice.config.setNwkskey(webServer.arg(theDevice.config.NWKSKEY_name).c_str());
 	theDevice.config.setAppskey(webServer.arg(theDevice.config.APPSKEY_name).c_str());
@@ -219,6 +259,7 @@ void CustomAPWebUI::onTime()
 void CustomAPWebUI::serverRoot()
 {
 	theDevice.ReadDS18B20Temperatures();
+	theDevice.GetInternalSensorValues();
 	serve(htmlContent.currentStateInnerBody());
 
 /*
@@ -269,7 +310,7 @@ void CustomAPWebUI::runWebserver(const IPAddress & ip)
 	ESP_LOGI(TAG, "Webserver timeout - end of serving, moving to sensing");
 }
 
-bool CustomAPWebUI::startAPWebUI()
+bool CustomAPWebUI::startWebUI()
 {
 	const char * defSP = "HappyFrog";
 	bool apActive = false;
@@ -280,7 +321,7 @@ bool CustomAPWebUI::startAPWebUI()
 	for(int i=0; i<10 && status != WL_CONNECTED ; i++){
 		ESP_LOGI(TAG, "Attempt #%d to connect to default WiFi, last state: %d",i,status);
 		status =  WiFi.begin(defSP,defSP);
-		delay(500);
+		delay(2000);
 	}
 	if( status != WL_CONNECTED ){
 		ESP_LOGI(TAG, "Could not connect to the default WiFi, starting of AP");
@@ -309,14 +350,26 @@ bool CustomAPWebUI::startAPWebUI()
 		MDNS.addServiceTxt("_http", "_tcp", "PATH", "/");
 		ESP_LOGI(TAG, "mDNS begun " );
 	}
-
 	runWebserver( WiFi.localIP() );
-
 	if( apActive ){
 		WiFi.softAPdisconnect(true);
 		ESP_LOGI(TAG,"WiFi AP finished");
 	}
 
+	return true;
+}
+
+
+
+
+bool CustomAPWebUI::boolParam(const char * parmName)
+{
+	auto val = webServer.arg(parmName);
+	if( val.length() == 0)
+		return false;
+	val.trim();
+	if( val.equals("0") || val.equalsIgnoreCase("false") )
+		return false;
 	return true;
 }
 

@@ -19,12 +19,15 @@ namespace Rana
 
         String currentStateInnerBody();
         String configInnerBody();
-        
+
     protected:
+        String configDivNameLoRaWAN();
+        String configDivGeneral();
+        String configDivProbeAssignment(); 
+
+
         String knownProbesTemperatures();
         String unknownProbesDropdown();
-        int lastProbeIndex();
-
 
     };
     

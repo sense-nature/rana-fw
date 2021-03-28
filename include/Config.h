@@ -50,7 +50,8 @@ public:
     String getAppsKeyStr();
     String getNwksKey();
  
-    void setProbeAddess(uint8_t idx, const char * strHexAddress);
+    bool setProbeAddess(uint8_t idx, const char * strHexAddress);
+    bool releaseProbe(uint8_t idx);
     uint8_t lastProbeIndex();
 /**
  * Time between measurements, in seconds

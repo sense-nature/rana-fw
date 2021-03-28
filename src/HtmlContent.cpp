@@ -178,8 +178,8 @@ String HtmlContent::formSetNextMeasurment() const
 {
     String sForm = R"(
     	<form name="next_measurement" action="next_measurement" >
-				<input type="number" name="next" min="1" style="width: 100px;"" value=")"
-        +String(theDevice.status.measurementCount)
+				<input type="number" name="next_measurement" min="1" style="width: 100px;" value=")"
+        +String(theDevice.status.measurementCount+1)
         +R"(" > 
                 <input type="submit" value="Set value">
 			</form>   

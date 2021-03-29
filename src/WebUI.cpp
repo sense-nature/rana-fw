@@ -147,10 +147,10 @@ void CustomAPWebUI::onAssign()
 		} else {
 			bool bSuccess = false;
 			if( addr.equalsIgnoreCase("release") ){
-				if( bSuccess = theDevice.config.releaseProbe(idx))
+				if( true == (bSuccess = theDevice.config.releaseProbe(idx)) )
 					innerHtmlBody = String("Released Probe T[")+strIdx+"]"; 
 			} else {
-				if( bSuccess = theDevice.config.setProbeAddess( idx, addr.c_str() ) )  	
+				if( true == (bSuccess = theDevice.config.setProbeAddess( idx, addr.c_str()))  )  	
 					innerHtmlBody = String("Assigned Probe T[")+strIdx+"] addess ["+addr+"]";  
 			}
 			if(bSuccess){

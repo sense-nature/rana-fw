@@ -104,6 +104,33 @@ unsigned long Status::millisFromStart()
     return millis() - startupTime;
 }
 
+
+uint8_t Status::getProbesStatus() 
+{
+    uint8_t stat = 0;
+    uint8_t oneBit = 0x01;
+    for(int i=0; i<8; i++, oneBit<<=1){
+        if(knownProbeTemperatures.count(i) == 0)
+            stat |= oneBit;
+    }    
+    return stat;
+}
+
+uint8_t Status::getSessionStatus() 
+{
+    uint8_t stat = 0;
+
+    if(wakeUpReson == ESP_SLEEP_WAKEUP_UNDEFINED)
+        stat |= 0x01;
+    if(internalSensor == SensorType::NoSensor)
+        stat |= (0x01<<1);
+        
+    return stat;
+}
+
+
+
+
 bool Status::SaveToSD() 
 {
     //StaticJsonDocument<JSON_DOC_BUFFER_SIZE> json;

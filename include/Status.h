@@ -72,6 +72,11 @@ public:
     bool enterConfigMode();
     bool SaveToSD();
 
+
+
+    uint8_t getProbesStatus();
+    uint8_t getSessionStatus();
+
 };
 
 

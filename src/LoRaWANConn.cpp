@@ -151,15 +151,18 @@ void LoRaWANConn::sendData(Rana::Device &device)
 {
 	ESP_LOGD("Start the message assembly");
     std::vector<uint8_t> message;
-    message.push_back(0x01);
-    message.push_back(device.status.measurementCount);
-    push2BytesToMessage(message, device.status.batteryLevel);
-    message.push_back(50);
-    push2BytesToMessage(message, 1000);
-    pushTemperatureToMessage(message, 20.0);
-    for(int i=0 ; i< device.status.knownProbeTemperatures.size(); i++)
-        pushTemperatureToMessage(message, device.status.knownProbeTemperatures[i].second);
+    message.push_back(device.status.getSessionStatus());
+    message.push_back(device.status.getProbesStatus());
+	
+	push2BytesToMessage(message, device	.status.batteryLevel);
+	message.push_back(device.status.intHumidity);
+    pushTemperatureToMessage(message, device.status.intTemperature);
 
+    for(int i=0 ; i< device.status.knownProbeTemperatures.size() && i<8; i++){
+		auto it = device.status.knownProbeTemperatures.find(i);
+		if( it!= device.status.knownProbeTemperatures.end())
+        	pushTemperatureToMessage(message, it->second.second);
+	}
     // Prepare upstream data transmission at the next possible time.
     lmic_tx_error_t ret = LMIC_sendWithCallback( device.config.NodeNumber, message.data(), message.size(), 0, afterLoraPacketSent, (void*)(&device));
     if( ret != LMIC_ERROR_SUCCESS ){

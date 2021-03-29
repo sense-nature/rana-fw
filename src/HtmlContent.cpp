@@ -74,6 +74,19 @@ const char * HtmlContent::getPageTop() const
         </style>
     </head>
     <body>
+        <div class="frog">
+            <pre><code>    _    _
+   (o)--(o) Happy Frog measuring node
+  /.______.\
+  \________/
+  ./        \.
+ ( .        , )
+  \ \_\\//_/ /
+   ~~  ~~  ~~ rana-fw v0.9.0 (Mar 28 2021)
+            </code></pre>
+        </div>
+        <br>             
+
 )";
     return top;     
 }
@@ -83,7 +96,7 @@ const char * HtmlContent::getPageFooter() const
     static const char footer [] = R"(
         <div class="footer">
             <hr>
-            <a href="state">Current box state</a>
+            <a href="state">Current node state</a>
             &nbsp;&nbsp;&nbsp;&nbsp;
             <a href="config">Configuration</a>
             &nbsp;&nbsp;&nbsp;&nbsp;
@@ -233,7 +246,7 @@ String HtmlContent::currentStateInnerBody()
     int battPercent = (int)(((double)theDevice.status.batteryLevel - 1700.0) / 5.2);
     stateTable += getTR("Battery", String(theDevice.status.batteryLevel) +" &nbsp;(~"+String(battPercent)+"%)");
     stateTable += getTR("Local time", theDevice.status.rtcTimeStr());
-    stateTable += getTR("Box climate", theDevice.status.getInternalSensorValues());
+    stateTable += getTR("Node climate", theDevice.status.getInternalSensorValues());
     stateTable += getTR("Measure interval", 
         String(theDevice.config.TimeBetween)
         +" s  ("
@@ -245,6 +258,8 @@ String HtmlContent::currentStateInnerBody()
     stateTable += getTR("#boot", String(theDevice.status.getBootCount()));
     stateTable += getTR("#measurement", String(theDevice.status.measurementCount));
     stateTable += getTR("Temperatures", knownProbesTemperatures());
+    //stateTable += getTR("Non-assigned probes", nonAssignedProbes());
+    
     stateTable += getTR("RAM", String());
     stateTable+=R"(</tbody>
 	</table>

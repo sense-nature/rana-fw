@@ -71,16 +71,18 @@ void Device::StartDevice()
 	Serial.begin(115200ul);
 	ESP_LOGI(TAG, "\n--------------\n----------------\nRana start");
 	Rana::Device::VextON();
-	config.ReadConfig(status);
+	ReadConfigFromSD();
 	config.ShowConfig();
 	Wire.begin(SDA_Pin, SCL_Pin);
 	Rana::Device::GetDisplay();
+	GetDisplay()->drawString(0, 0, "#");
+	GetDisplay()->display();
 	ReadAndUpdateEepromData();
 	ReadRTCTime();
 	ReadDS18B20Temperatures();
 	GetDisplay()->flipScreenVertically();
 	GetDisplay()->drawString(0, 0, "# " + String(status.getBootCount())+" | "+String(status.measurementCount)); 
-	GetDisplay()->drawString(0, 33," probes: " + String(status.unknownProbeTemperatures.size() +status.knownProbeTemperatures.size()));
+	GetDisplay()->drawString(0, 13,"probes: " + String(status.unknownProbeTemperatures.size() +status.knownProbeTemperatures.size()));
 	GetDisplay()->display();
 	delay(1000);
 	ReadInternalSensorValues();
@@ -164,6 +166,12 @@ void Device::ReadDS18B20Temperatures()
 {
 	OWTemperatures::ReadValues(OneWire_Pin, config ,status);
 }
+
+void Device::ReadConfigFromSD() 
+{
+	config.ReadConfig(status);
+}
+
 
 
 void Device::ReadRTCTime()

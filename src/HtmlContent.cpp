@@ -82,7 +82,7 @@ const char * HtmlContent::getPageTop() const
   ./        \.
  ( .        , )
   \ \_\\//_/ /
-   ~~  ~~  ~~ rana-fw v0.9.0 (Mar 28 2021)
+   ~~  ~~  ~~ rana-fw v0.9.1 (Mar 31 2021)
             </code></pre>
         </div>
         <br>             
@@ -129,6 +129,35 @@ String HtmlContent::unknownProbesDropdown()
     return out;
 
 }
+
+ String HtmlContent::nonAssignedProbes() 
+{
+    String out=R"(
+        <table class="v vt">
+			<thead>
+                <tr>
+				<th>#</th>
+				<th>address</th>
+				<th>current<br>temperature</th>
+                </tr>
+			</thead>
+			<tbody>)";
+    for(size_t i = 0; i < theDevice.status.unknownProbeTemperatures.size(); i++){
+        auto & up = theDevice.status.unknownProbeTemperatures[i];
+
+        String s = R"(<tr><td>{1}</td><td>{2}</td><td>{3} &deg;C</td></tr>
+        )";
+        s.replace("{1}",String(i+1,10));
+        s.replace("{2}",devAddrToString(up.first) );
+        s.replace("{3}",String(up.second));
+        out += s;
+    }
+    out += R"(
+            </tbody>		
+		</table>)";
+    return out;
+}
+
 
 String HtmlContent::knownProbesTemperatures()
 {
@@ -258,7 +287,7 @@ String HtmlContent::currentStateInnerBody()
     stateTable += getTR("#boot", String(theDevice.status.getBootCount()));
     stateTable += getTR("#measurement", String(theDevice.status.measurementCount));
     stateTable += getTR("Temperatures", knownProbesTemperatures());
-    //stateTable += getTR("Non-assigned probes", nonAssignedProbes());
+    stateTable += getTR("Non-assigned probes", nonAssignedProbes());
     
     stateTable += getTR("RAM", String());
     stateTable+=R"(</tbody>

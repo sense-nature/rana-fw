@@ -182,6 +182,10 @@ void CustomAPWebUI::onAssign()
 
 void CustomAPWebUI::onConfig()
 {
+	theDevice.ReadConfigFromSD();
+	theDevice.ReadDS18B20Temperatures();
+	theDevice.ReadInternalSensorValues();
+	theDevice.ReadRTCTime();
 	serve(htmlContent.configInnerBody());
 }
 void CustomAPWebUI::onSaveConfig()
@@ -275,6 +279,7 @@ void CustomAPWebUI::onNextMeasurement()
 
 void CustomAPWebUI::serverRoot()
 {
+	theDevice.ReadConfigFromSD();
 	theDevice.ReadDS18B20Temperatures();
 	theDevice.ReadInternalSensorValues();
 	theDevice.ReadRTCTime();
@@ -336,14 +341,16 @@ bool CustomAPWebUI::startWebUI()
 
 	auto ch = selectChannelForAp();
 	auto status =  WiFi.begin(defSP,defSP);
-	for(int i=0; i<10 && status != WL_CONNECTED ; i++){
+	theDevice.GetDisplay()->drawString(64, 0, "WebUI start"); 
+	for(uint8_t i=0; i<10 && status != WL_CONNECTED ; i++){
 		ESP_LOGI(TAG, "Attempt #%d to connect to default WiFi, last state: %d",i,status);
 		status =  WiFi.begin(defSP,defSP);
+		theDevice.GetDisplay()->drawProgressBar(64,14,64,4, (i+1)*10 );
+		theDevice.GetDisplay()->display();
 		delay(2000);
 	}
 	if( status != WL_CONNECTED ){
 		ESP_LOGI(TAG, "Could not connect to the default WiFi, starting of AP");
-
 		WiFi.setHostname(hostname );
 		const IPAddress apIP(10, 12, 14, 1);
 		WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
@@ -353,12 +360,16 @@ bool CustomAPWebUI::startWebUI()
 			ESP_LOGI(TAG,"Could not start WebUI AP");
 		else {
 			ESP_LOGI(TAG,"Starting AP wifi, ssid [%s], channel:%d ",ssid.c_str(), ch);
+			theDevice.GetDisplay()->drawString(64, 24, "AP-Mode");
+			theDevice.GetDisplay()->drawString(64, 35, "10.12.14.1");			 
 			apActive = true;
 		}
 	} else {
 		ESP_LOGI(TAG,"Conncted to default WiFi ",defSP);
+		theDevice.GetDisplay()->drawString(64, 24, "WiFi Client");
+		theDevice.GetDisplay()->drawString(64, 35, WiFi.localIP().toString());			 
 	}
-
+	theDevice.GetDisplay()->display();
 	delay(2000); //let the soft AP start 
 	// In case we create a unique password at first start
 	//debug_outln_info(F("AP Password is: "), cfg::fs_pwd);

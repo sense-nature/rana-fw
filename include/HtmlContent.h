@@ -32,9 +32,11 @@ namespace Rana
 
 
         String knownProbesTemperatures();
+        String nonAssignedProbes();
         String unknownProbesDropdown();
 
     };
+  
     
     
    

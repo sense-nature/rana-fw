@@ -296,6 +296,7 @@ void CustomAPWebUI::serverRoot()
 
 void CustomAPWebUI::serve(const String & innerHtmlBody)
 {
+	updateLastActivityTime();
 	webServer.setContentLength(CONTENT_LENGTH_UNKNOWN);
 	webServer.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
 	webServer.send(200, "text/html", htmlContent.getPageTop());
@@ -308,6 +309,13 @@ void CustomAPWebUI::defaultNotFound()
 	//webServer.sendHeader()
 	webServer.sendContent("Error 404 - Page not found");
 }
+
+
+void CustomAPWebUI::updateLastActivityTime() 
+{
+	lastActivity = millis();
+}
+
 
 void CustomAPWebUI::runWebserver(const IPAddress & ip)
 {
@@ -324,8 +332,8 @@ void CustomAPWebUI::runWebserver(const IPAddress & ip)
 
 	// 10 minutes timeout for wifi config
 	const unsigned long timeout =  10 * 60 * 1000; //[ms]
-	auto last_page_load = millis();
-	while ((millis() - last_page_load) < timeout + 500) {
+	lastActivity = millis();
+	while ((millis() - lastActivity) < timeout + 500) {
 		dnsServer.processNextRequest();
 		webServer.handleClient();
 		yield();
@@ -384,7 +392,10 @@ bool CustomAPWebUI::startWebUI()
 		WiFi.softAPdisconnect(true);
 		ESP_LOGI(TAG,"WiFi AP finished");
 	}
-
+	WiFi.disconnect(true, true);
+	esp_wifi_stop();
+	ESP_LOGI(TAG,"WiFi stopped, restarting ...");
+	esp_restart();
 	return true;
 }
 

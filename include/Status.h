@@ -54,6 +54,7 @@ public:
     float intPressure = NotDefined;
 
     String getInternalSensorValues();
+    bool hasInternalSensor();
 
 
 

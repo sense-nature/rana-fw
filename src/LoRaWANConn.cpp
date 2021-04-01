@@ -28,6 +28,44 @@ const lmic_pinmap lmic_pins = {
     .dio = {DIO0,  DIO1 , DIO2}  //26, 35, 34 
 }; 
 
+dr_t GetSF(uint8_t uintSF)
+{
+	if( uintSF >= 12  )
+		return DR_SF12;
+	if( uintSF <= 7 )
+		return DR_SF7;
+	switch (uintSF)
+	{
+	case 11: return DR_SF11;
+	case 10: return DR_SF10;
+	case 9: return DR_SF9;
+	case 8: return DR_SF8;
+	case 7: return DR_SF7;
+	}
+	return DR_SF7;
+}
+
+
+ void LMIC_ABI_STD LoRaWANCallback(void *pUserData, ev_t e)
+ {
+	 static const char * ev_names[] = {LMIC_EVENT_NAME_TABLE__INIT};
+	 ESP_LOGD(TAG,"LMIC event: %s",ev_names[e]);
+	Rana::Device * pDevice = ((Rana::Device *)pUserData);
+
+	 switch (e)
+	 {
+	 case EV_JOIN_FAILED:
+	 case EV_REJOIN_FAILED:
+	 	ESP_LOGE(TAG,"LoRaWAN (RE)JOIN FAILED, deep sleep now");
+		pDevice->GotoDeepSleep();	 
+		 break;
+	case EV_TXCANCELED:
+	 	ESP_LOGE(TAG,"LoRaWAN transmit cancelled, deep sleep now");
+		pDevice->GotoDeepSleep();	 
+	 default:
+		 break;
+	 }
+ }
 
 LoRaWANConn::LoRaWANConn() 
 {
@@ -40,7 +78,7 @@ LoRaWANConn::~LoRaWANConn()
 }
 
 
-void LoRaWANConn::initLoRaWAN(u4_t seqNo, Config &conf) {
+void LoRaWANConn::initLoRaWAN(Rana::Device &device) {
     
 
 	// LMIC init
@@ -50,9 +88,9 @@ void LoRaWANConn::initLoRaWAN(u4_t seqNo, Config &conf) {
 	LMIC_setClockError(MAX_CLOCK_ERROR * 3 / 100);
 
 	// Set static session parameters. TTN network has id 0x13
-	LMIC_setSession((unsigned)0x13, conf.DEVADDRu32(), conf.NWKSKEY, conf.APPSKEY);
+	LMIC_setSession((unsigned)0x13, device.config.DEVADDRu32(), device.config.NWKSKEY, device.config.APPSKEY);
 
-	LMIC_setSeqnoUp(seqNo);
+	LMIC_setSeqnoUp(device.status.measurementCount);
 	//(bootCount);
 	// Set up the channels used by the Things Network, which corresponds
 	// to the defaults of most gateways. Without this, only three base
@@ -85,10 +123,15 @@ void LoRaWANConn::initLoRaWAN(u4_t seqNo, Config &conf) {
 	// Set data rate and transmit power for uplink (note: txpow seems to be ignored by the library)
 	//LMIC_setDrTxpow(DR_SF11,14);
 	//LMIC_setDrTxpow(DR_SF9,14);
-	LMIC_setDrTxpow(DR_SF8, 14);
+
+	LMIC_registerEventCb(LoRaWANCallback,(void*)(&device));
+	LMIC_setDrTxpow(GetSF(device.config.SF), 14);
 	LMIC_startJoining();
+	
 	ESP_LOGD(TAG,"LMIC after start joining");
 }                                     
+
+
 
 void LoRaWANConn::Loop() 
 {
@@ -114,18 +157,41 @@ uint8_t getLow(uint16_t val){
 	return val & 0xFF;
 }
 
-
+/*
 void push2BytesToMessage(std::vector<uint8_t> & vect, int16_t iValue){
 	vect.push_back(getHigh(iValue));
 	vect.push_back(getLow(iValue));
 }
+//*/
 
+
+void push2BytesToMessage(uint8_t * buffer, uint8_t &firstFreeIndex, int16_t iValue){
+	buffer[firstFreeIndex++] = getHigh(iValue);
+	buffer[firstFreeIndex++] = getLow(iValue);
+}
+
+
+/*
 void pushTemperatureToMessage(std::vector<uint8_t> & vect, float fTemperature){
 	int16_t iTemp = (int16_t)roundf(fTemperature*100.0f);
 	push2BytesToMessage(vect, iTemp);
 }
+//*/
+void pushTemperatureToMessage(uint8_t * buffer, uint8_t &firstFreeIndex, float fTemperature)
+{
+	int16_t iTemp = (int16_t)roundf(fTemperature*100.0f);
+	push2BytesToMessage(buffer,firstFreeIndex, iTemp);
+}
 
     
+void pushByteToMessage(uint8_t * buffer, uint8_t &firstFreeIndex, uint8_t value)
+{
+	buffer[firstFreeIndex++] = value;	
+	
+}
+
+
+
 
 void afterLoraPacketSent(void *pUserData, int fSuccess){
 // Heltec.display->clear();
@@ -149,22 +215,35 @@ void afterLoraPacketSent(void *pUserData, int fSuccess){
 
 void LoRaWANConn::sendData(Rana::Device &device) 
 {
+	initLoRaWAN(device);
 	ESP_LOGD("Start the message assembly");
-    std::vector<uint8_t> message;
-    message.push_back(device.status.getSessionStatus());
-    message.push_back(device.status.getProbesStatus());
-	
-	push2BytesToMessage(message, device	.status.batteryLevel);
-	message.push_back(device.status.intHumidity);
-    pushTemperatureToMessage(message, device.status.intTemperature);
+	//buffer for [Byte] 
+	// statuses: 2
+	//battery: 2
+	//internal climate: 3
+	//8 * probe temps: 8*2
+	static uint8_t buffer[ 2 + 2 + 3 + 8*2 ] = {};
+	uint8_t currIdx = 0;
 
-    for(int i=0 ; i< device.status.knownProbeTemperatures.size() && i<8; i++){
+	pushByteToMessage(buffer,currIdx,device.status.getSessionStatus());
+	pushByteToMessage(buffer,currIdx,device.status.getProbesStatus());
+	push2BytesToMessage(buffer,currIdx,device.status.batteryLevel);
+    
+	if(device.status.hasInternalSensor()){
+		pushByteToMessage(buffer,currIdx,(uint8_t)roundf(device.status.intHumidity));
+		pushTemperatureToMessage(buffer,currIdx,device.status.intTemperature);
+	}
+	uint8_t n=0;
+    for(uint8_t i=0 ; n<device.status.knownProbeTemperatures.size() && i<8; i ++){
 		auto it = device.status.knownProbeTemperatures.find(i);
-		if( it!= device.status.knownProbeTemperatures.end())
-        	pushTemperatureToMessage(message, it->second.second);
+		if( it!= device.status.knownProbeTemperatures.end()){
+			pushTemperatureToMessage(buffer,currIdx,it->second.second);
+			n++;
+		}
 	}
     // Prepare upstream data transmission at the next possible time.
-    lmic_tx_error_t ret = LMIC_sendWithCallback( device.config.NodeNumber, message.data(), message.size(), 0, afterLoraPacketSent, (void*)(&device));
+	ESP_LOGD(TAG,"Prepared message is %u B: %s, ",currIdx, binToHexString(buffer, currIdx).c_str());
+    lmic_tx_error_t ret = LMIC_sendWithCallback( device.config.NodeNumber, buffer, currIdx, 0, afterLoraPacketSent, (void*)(&device));
     if( ret != LMIC_ERROR_SUCCESS ){
         ESP_LOGE(TAG,"Cannot register sending the LoRaWAN package. Error = %d",ret);
     } else {

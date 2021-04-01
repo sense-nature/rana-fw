@@ -64,6 +64,10 @@ protected:
 	WebServer webServer;
 	HtmlContent htmlContent;
 
+	unsigned long lastActivity;
+
+	void updateLastActivityTime();
+
 
 public:
 	CustomAPWebUI(Device &dev);
@@ -94,6 +98,7 @@ protected:
 	bool boolParam(const char * parmName);
 
 };
+
 
 
 

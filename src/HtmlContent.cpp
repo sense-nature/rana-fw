@@ -82,7 +82,7 @@ const char * HtmlContent::getPageTop() const
   ./        \.
  ( .        , )
   \ \_\\//_/ /
-   ~~  ~~  ~~ rana-fw v0.9.1 (Mar 31 2021)
+   ~~  ~~  ~~ rana-fw v0.9.2 (Apr 1 2021)
             </code></pre>
         </div>
         <br>             

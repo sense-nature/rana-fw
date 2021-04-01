@@ -122,12 +122,16 @@ uint8_t Status::getSessionStatus()
 
     if(wakeUpReson == ESP_SLEEP_WAKEUP_UNDEFINED)
         stat |= 0x01;
-    if(internalSensor == SensorType::NoSensor)
+    if( ! hasInternalSensor() )
         stat |= (0x01<<1);
         
     return stat;
 }
 
+bool Status::hasInternalSensor()
+{
+     return internalSensor != SensorType::NoSensor;
+}
 
 
 

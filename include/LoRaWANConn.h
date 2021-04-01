@@ -13,10 +13,12 @@ class Device;
 class LoRaWANConn
 {
 public:
+    static void initLoRaWAN(Rana::Device &device);
+
+public:
 
     LoRaWANConn();
     ~LoRaWANConn();
-    static void initLoRaWAN(uint32_t seqNo, Config &conf);
     void sendData(Rana::Device &device);
 
     void Loop();

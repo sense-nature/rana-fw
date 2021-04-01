@@ -116,8 +116,7 @@ void  Device::startWebConfig()
 void  Device::sendMeasurementsOveLoRaWAN()
 {
 	ESP_LOGI("Sending the data over LoRaWAN");
-	lora.initLoRaWAN(status.measurementCount, config);
-	ESP_LOGD(TAG,"theDevice pointer: 0x%X",this);
+	//ESP_LOGD(TAG,"theDevice pointer: 0x%X",this);
 	lora.sendData(*this);
 
 

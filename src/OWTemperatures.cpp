@@ -84,6 +84,7 @@ std::vector<std::pair<DevAddrArray_t,float>>  OWTemperatures::ReadBus(uint8_t pi
 	DallasTemperature ds18b20(&w1);
 	ds18b20.begin();
 	ds18b20.setResolution(12);
+    ds18b20.setWaitForConversion(true);
 	ds18b20.setCheckForConversion(false);
 	ds18b20.requestTemperatures();
 	delay(200u);

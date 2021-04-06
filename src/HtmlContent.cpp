@@ -82,7 +82,7 @@ const char * HtmlContent::getPageTop() const
   ./        \.
  ( .        , )
   \ \_\\//_/ /
-   ~~  ~~  ~~ rana-fw v0.9.2 (Apr 1 2021)
+   ~~  ~~  ~~ rana-fw v0.9.3 (Apr 1 2021)
             </code></pre>
         </div>
         <br>             
@@ -272,6 +272,17 @@ String HtmlContent::currentStateInnerBody()
 	    <tbody>)";
     stateTable += getTR("Node Name", "Rana"+String(theDevice.config.NodeNumber));
     stateTable += getTR("MAC address", theDevice.GetHWString());
+    esp_chip_info_t ci;
+    esp_chip_info(&ci);
+    String strCI = String("ESP32");
+    if(ci.model != CHIP_ESP32)
+        strCI = "Non-"+strCI;
+    strCI += (" rev."+String(ci.revision,10));
+    strCI += (", cores: "+String(ci.cores,10));
+    strCI += (", feats: 0x"+String(ci.features,16));
+    if( soc_has_cache_lock_bug() )
+        strCI += (", cache BUG");
+    stateTable += getTR("Chip info", strCI);
     int battPercent = (int)(((double)theDevice.status.batteryLevel - 1700.0) / 5.2);
     stateTable += getTR("Battery", String(theDevice.status.batteryLevel) +" &nbsp;(~"+String(battPercent)+"%)");
     stateTable += getTR("Local time", theDevice.status.rtcTimeStr());
@@ -289,7 +300,7 @@ String HtmlContent::currentStateInnerBody()
     stateTable += getTR("Temperatures", knownProbesTemperatures());
     stateTable += getTR("Non-assigned probes", nonAssignedProbes());
     
-    stateTable += getTR("RAM", String());
+    stateTable += getTR("RAM / free heap", String(esp_get_free_heap_size()/1024.0, 2)+" kB");
     stateTable+=R"(</tbody>
 	</table>
 </div>)";

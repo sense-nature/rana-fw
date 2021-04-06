@@ -93,8 +93,8 @@ fs::FS * FSWrapper::getSDFS(bool & success){
         success = false;
     } else {
         success = true; 
-        ESP_LOGI(TAG, "Found SD card type: %s, size: %.3gMB",cardTypeStr(SD.cardType()).c_str(), SD.cardSize()/1024.0/1024.0);
-        ESP_LOGI(TAG, "Card capacity used: %.3gMB of %.3gMB ",SD.usedBytes()/(1024.0*1024.0),SD.totalBytes()/(1024.0*1024.0)); 
+        ESP_LOGI(TAG, "Found SD card type: %s, size: %.3lf GB",cardTypeStr(SD.cardType()).c_str(), SD.cardSize()/(1024.0*1024.0*1024.0));
+        ESP_LOGI(TAG, "Card capacity used: %.3lf GB of %.3lf GB ",SD.usedBytes()/(1024.0*1024.0*1024.0),SD.totalBytes()/(1024.0*1024.0*1024.0)); 
     }
     return &SD;
 }

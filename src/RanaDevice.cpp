@@ -81,8 +81,10 @@ void Device::StartDevice()
 	ReadRTCTime();
 	ReadDS18B20Temperatures();
 	GetDisplay()->flipScreenVertically();
-	GetDisplay()->drawString(0, 0, "# " + String(status.getBootCount())+" | "+String(status.measurementCount)); 
-	GetDisplay()->drawString(0, 13,"probes: " + String(status.unknownProbeTemperatures.size() +status.knownProbeTemperatures.size()));
+	GetDisplay()->clear();
+	GetDisplay()->drawString(0, 0, "Rana"+String(config.NodeNumber,10));
+	GetDisplay()->drawString(0, 13, "#" + String(status.getBootCount())+" / "+String(status.measurementCount)); 
+	GetDisplay()->drawString(0, 24, "probes " + String(status.unknownProbeTemperatures.size(),10 )+"+"+String(status.knownProbeTemperatures.size(),10));
 	GetDisplay()->display();
 	delay(1000);
 	ReadInternalSensorValues();
@@ -133,7 +135,7 @@ void Device::ReadInternalSensorValues()
 						, Adafruit_BME280::sensor_sampling::SAMPLING_X1
 						, Adafruit_BME280::sensor_sampling::SAMPLING_X1
 						, Adafruit_BME280::sensor_sampling::SAMPLING_X1
-						,Adafruit_BME280::sensor_filter::FILTER_OFF);
+						, Adafruit_BME280::sensor_filter::FILTER_OFF);
 
 		status.intTemperature = bme.readTemperature(); /* *C */
 		status.intHumidity = roundf(bme.readHumidity()); /* % */
@@ -268,7 +270,8 @@ void Device::ReadBatteryLevel()
     //works only on the older moduled, chipid xxxx 5B1DA0D8 , not the v2.1
 
     //adc_power_on();
-    //posssibly adc should be here initialized            
+    //posssibly adc should be here initialized    
+	adc_power_acquire();        
 	delay(100u);
     pinMode(Battery_Pin,OPEN_DRAIN);
     delay(100u);
@@ -277,6 +280,7 @@ void Device::ReadBatteryLevel()
     //batteryVoltage = analogRead(Battery_Pin); 
     //Reference voltage is 3v3 so maximum reading is 3v3 = 4095 in range 0 to 4095
 	//Serial.println("Battery voltage reading: "+ String(batteryVoltage));
+	adc_power_release();        
 	pinMode(Battery_Pin, OUTPUT);
 	digitalWrite(Battery_Pin, LOW);      
 }
@@ -334,9 +338,7 @@ constexpr uint64_t sToMilliS(uint64_t seconds)
 
 void Device::GotoDeepSleep() 
 {
-	Serial.println("Going to deep sleep.");
-	adc_power_off();
-	
+	Serial.println("Going to deep sleep.");	
 	//from https://github.com/Heltec-Aaron-Lee/WiFi_Kit_series/issues/6#issuecomment-518896314
 	pinMode(RST_LoRa,INPUT);
 	SPI.end();

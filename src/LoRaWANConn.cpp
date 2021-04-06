@@ -199,10 +199,10 @@ void afterLoraPacketSent(void *pUserData, int fSuccess){
     ESP_LOGD(TAG,"After Lora Packet sent");
 	Rana::Device * pDevice = ((Rana::Device *)pUserData);
     if( fSuccess){
-        pDevice->GetDisplay()->drawString (0,22, " SENT");
+        pDevice->GetDisplay()->drawString (0,35, " SENT");
         ESP_LOGI(TAG,"Sending result: OK");
     } else {
-        pDevice->GetDisplay()->drawString (0, 22," FAILED");
+        pDevice->GetDisplay()->drawString (0, 36," FAILED");
         ESP_LOGI(TAG,"Sending result: FAILED");
     }
 	pDevice->GetDisplay()->display();

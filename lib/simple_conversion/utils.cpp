@@ -61,11 +61,13 @@ String stripNonHexChars(const char * str)
     return out;
 }
 
+/*
 DevAddrArray_t stringToDevAddrT(const char * str)
 {
 
 
 }
+//*/
 
 
 String devAddrToString(const DeviceAddress & da)

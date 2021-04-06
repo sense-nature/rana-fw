@@ -369,13 +369,13 @@ bool CustomAPWebUI::startWebUI()
 		else {
 			ESP_LOGI(TAG,"Starting AP wifi, ssid [%s], channel:%d ",ssid.c_str(), ch);
 			theDevice.GetDisplay()->drawString(64, 24, "AP-Mode");
-			theDevice.GetDisplay()->drawString(64, 35, "10.12.14.1");			 
+			theDevice.GetDisplay()->drawString(32, 35, "10.12.14.1");			 
 			apActive = true;
 		}
 	} else {
 		ESP_LOGI(TAG,"Conncted to default WiFi ",defSP);
 		theDevice.GetDisplay()->drawString(64, 24, "WiFi Client");
-		theDevice.GetDisplay()->drawString(64, 35, WiFi.localIP().toString());			 
+		theDevice.GetDisplay()->drawString(32, 35, WiFi.localIP().toString());			 
 	}
 	theDevice.GetDisplay()->display();
 	delay(2000); //let the soft AP start 

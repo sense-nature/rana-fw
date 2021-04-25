@@ -164,14 +164,15 @@ void CustomAPWebUI::onAssign()
 	} else {
 		innerHtmlBody =  R"(
 		You are about to change:<br>
-		probe T{1} => address: {2}
-		<br>			
+		probe <b>T{1}</b> => address: <b>{2}</b>
+		<br><br>			
 		<form>
             <input type="hidden" name="T" value="{1}">
             <input type="hidden" name="address" value="{2}">
             <input type="hidden" name="confirmed" value="true">
             <input type="submit" value="Confirm the change">
         </form>
+		<br><br><br><br>
         )";
 		innerHtmlBody.replace("{1}", strIdx);
 		innerHtmlBody.replace("{2}", addr);
@@ -202,17 +203,27 @@ void CustomAPWebUI::onSaveConfig()
 	String interval = webServer.arg("interval");
 	interval.trim();
 	int iInt = atoi(interval.c_str());
-	if( iInt > 20 )
-		theDevice.config.TimeBetween = iInt;
-	else
-		text +="Interval < 20s, not changed <br>";
+	if( iInt > 20 ){
+			theDevice.config.TimeBetween = iInt;
+	} else {
+			text +="Interval < 20s, not changed <br>";
+	}
 
-	theDevice.config.setNodeNumber((uint8_t)atoi(webServer.arg(theDevice.config.NodeNumber_name).c_str()));
-	theDevice.config.setDevaddr(webServer.arg(theDevice.config.DEVADDR_name).c_str());
-	theDevice.config.setNwkskey(webServer.arg(theDevice.config.NWKSKEY_name).c_str());
-	theDevice.config.setAppskey(webServer.arg(theDevice.config.APPSKEY_name).c_str());
-	theDevice.config.setSF((uint8_t)atoi(webServer.arg(theDevice.config.SF_name).c_str()));	
-
+	if( webServer.hasArg("only_interval") && webServer.arg("only_interval").compareTo("true") == 0 ){
+		text += "Saved <b>interval</b>.<br>";
+	} else {
+		if(webServer.hasArg(theDevice.config.NodeNumber_name))
+			theDevice.config.setNodeNumber((uint8_t)atoi(webServer.arg(theDevice.config.NodeNumber_name).c_str()));
+		if(webServer.hasArg(theDevice.config.DEVADDR_name))
+			theDevice.config.setDevaddr(webServer.arg(theDevice.config.DEVADDR_name).c_str());
+		if(webServer.hasArg(theDevice.config.NWKSKEY_name))
+			theDevice.config.setNwkskey(webServer.arg(theDevice.config.NWKSKEY_name).c_str());
+		if(webServer.hasArg(theDevice.config.APPSKEY_name))
+			theDevice.config.setAppskey(webServer.arg(theDevice.config.APPSKEY_name).c_str());
+		if(webServer.hasArg(theDevice.config.SF_name))
+			theDevice.config.setSF((uint8_t)atoi(webServer.arg(theDevice.config.SF_name).c_str()));	
+		text += "Saved the <b>interval and LoRaWAN config</b>.<br>";
+	}
 	theDevice.config.SaveConfig();
 	theDevice.config.ShowConfig();
 
@@ -353,7 +364,7 @@ bool CustomAPWebUI::startWebUI()
 	for(uint8_t i=0; i<10 && status != WL_CONNECTED ; i++){
 		ESP_LOGI(TAG, "Attempt #%d to connect to default WiFi, last state: %d",i,status);
 		status =  WiFi.begin(defSP,defSP);
-		theDevice.GetDisplay()->drawProgressBar(64,14,64,4, (i+1)*10 );
+		theDevice.GetDisplay()->drawProgressBar(64,14,50,4, (i+1)*10 );
 		theDevice.GetDisplay()->display();
 		delay(2000);
 	}

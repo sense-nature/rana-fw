@@ -82,7 +82,7 @@ const char * HtmlContent::getPageTop() const
   ./        \.
  ( .        , )
   \ \_\\//_/ /
-   ~~  ~~  ~~ rana-fw v0.9.3 (Apr 1 2021)
+   ~~  ~~  ~~ rana-fw v0.9.4 (Apr 25 2021)
             </code></pre>
         </div>
         <br>             
@@ -283,7 +283,7 @@ String HtmlContent::currentStateInnerBody()
     if( soc_has_cache_lock_bug() )
         strCI += (", cache BUG");
     stateTable += getTR("Chip info", strCI);
-    int battPercent = (int)(((double)theDevice.status.batteryLevel - 1700.0) / 5.2);
+    int battPercent = (int)(((double)theDevice.status.batteryLevel - 1700.0) / 5.3);
     stateTable += getTR("Battery", String(theDevice.status.batteryLevel) +" &nbsp;(~"+String(battPercent)+"%)");
     stateTable += getTR("Local time", theDevice.status.rtcTimeStr());
     stateTable += getTR("Node climate", theDevice.status.getInternalSensorValues());
@@ -326,6 +326,7 @@ String HtmlContent::configDivGeneral()
     divStr+=R"(</tbody>
 	</table>
     <br>
+    <input type="hidden" name="only_interval" value="true" />
     <input type="submit" value="Save config"/>
     </form>
 </div>

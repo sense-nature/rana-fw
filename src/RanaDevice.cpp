@@ -73,13 +73,13 @@ void Device::StartDevice()
 	Rana::Device::VextON();
 	ReadConfigFromSD();
 	config.ShowConfig();
+	ReadDS18B20Temperatures();
 	Wire.begin(SDA_Pin, SCL_Pin);
 	Rana::Device::GetDisplay();
 	GetDisplay()->drawString(0, 0, "#");
 	GetDisplay()->display();
 	ReadAndUpdateEepromData();
 	ReadRTCTime();
-	ReadDS18B20Temperatures();
 	GetDisplay()->flipScreenVertically();
 	GetDisplay()->clear();
 	GetDisplay()->drawString(0, 0, "Rana"+String(config.NodeNumber,10));

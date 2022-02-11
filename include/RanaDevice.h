@@ -2,7 +2,8 @@
 #define __Rana_Device_h__
 
 #include <inttypes.h>
-#include <SSD1306.h>
+#include <Wire.h>
+#include <SSD1306Wire.h>
 #include <DallasTemperature.h>
 #include <map>
 #include <vector>

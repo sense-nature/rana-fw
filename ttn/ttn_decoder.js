@@ -1,4 +1,9 @@
-function Decoder(bytes, port) {
+
+function decodeUplink(input) {
+	bytes = input.bytes;
+	port = input.fPort;
+	
+	
 	// Decode an uplink message from a buffer to an object of fields
 	// bytes: array of uitn8_t, the message data
 	// port: uint8_t, the LoRaWAN FPort param
@@ -36,5 +41,10 @@ function Decoder(bytes, port) {
 		}
 
 	}
-	return retObject;
+	//return retObject;
+	return {
+		data: retObject,
+		warnings: [],
+		errors: []
+	  };
 }
